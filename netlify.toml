@@ -1,0 +1,37 @@
+#############################################
+# 🏗️ BUILD & FUNCTIONS
+#############################################
+[build]
+  command = "npm run build"
+  functions = "netlify/functions"
+  publish = "dist"
+
+#############################################
+# ⚙️ FUNCTIONS SETTINGS
+#############################################
+# La función Python usa runtime 3.11
+[functions."procesar_planilla"]
+  runtime = "python3.11"
+
+# (Opcional) más recursos para PDFs pesados
+[functions.settings]
+  timeout = 50
+  memory = 1024
+
+#############################################
+# 🚫 CACHE HEADERS (tus originales)
+#############################################
+[[headers]]
+  for = "/*"
+  [headers.values]
+  Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+  Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+  Cache-Control = "public, max-age=31536000, immutable"
