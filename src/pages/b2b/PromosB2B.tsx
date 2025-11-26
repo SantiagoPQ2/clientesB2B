@@ -64,8 +64,8 @@ const PromosB2B: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
@@ -73,11 +73,11 @@ const PromosB2B: React.FC = () => {
                 No hay promociones disponibles en este momento.
               </div>
             ) : (
-              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {promos.map((p) => (
                   <div
                     key={p.id}
-                    className="bg-white rounded-xl border shadow hover:shadow-lg transition overflow-hidden"
+                    className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                   >
                     {/* Imagen */}
                     <div className="h-40 bg-gray-50 flex items-center justify-center">
@@ -95,7 +95,7 @@ const PromosB2B: React.FC = () => {
                     </div>
 
                     {/* Info */}
-                    <div className="p-4 flex flex-col">
+                    <div className="p-4 flex flex-col flex-1">
                       <div className="mb-2">
                         <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-md">
                           PROMO
@@ -149,7 +149,7 @@ const PromosB2B: React.FC = () => {
           </div>
 
           {/* CARRITO LATERAL */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
               secondaryLabel="Ver catálogo"
