@@ -6,11 +6,10 @@ export default function Navigation() {
   const location = useLocation();
 
   const isActive = (path: string) =>
-    location.pathname === path ? "text-red-600 font-bold" : "text-gray-700";
+    location.pathname === path ? "text-red-600 font-bold" : "text-gray-800";
 
   return (
     <header className="w-full bg-white shadow px-4 py-3 flex items-center justify-between">
-      {/* Logo + rol */}
       <div>
         <h1 className="text-xl font-semibold">VaFood B2B</h1>
         <p className="text-xs text-gray-500">
@@ -18,8 +17,11 @@ export default function Navigation() {
         </p>
       </div>
 
-      {/* Navigation links */}
       <nav className="flex gap-6 items-center">
+
+        <Link to="/promos" className={isActive("/promos")}>
+          Promos
+        </Link>
 
         <Link to="/catalogo" className={isActive("/catalogo")}>
           Catálogo
