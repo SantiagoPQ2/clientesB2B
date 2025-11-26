@@ -24,7 +24,7 @@ const Navigation: React.FC = () => {
 
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Cerrar menú usuario al hacer click fuera
+  // Cerrar menú usuario al hacer click afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -84,66 +84,66 @@ const Navigation: React.FC = () => {
 
   const sinLeer = notificaciones.filter((n) => !n.leida).length;
 
-  // Título superior
+  // Títulos
   const getCurrentPageName = () => {
     switch (location.pathname) {
+      case "/":
+        return "Promociones";
       case "/b2b/catalogo":
-        return "B2B - Catálogo";
+        return "Catálogo";
       case "/b2b/carrito":
-        return "B2B - Carrito";
+        return "Carrito";
       case "/b2b/pedidos":
-        return "B2B - Pedidos";
+        return "Pedidos";
       case "/settings":
         return "Configuración";
       default:
-        return "VaFood SRL - B2B";
+        return "VaFood B2B";
     }
   };
 
-  // ============================================
-  //   NUEVO: MENU SOLO PARA admin y cliente
-  // ============================================
-
-  let menuItems: {
-    name: string;
-    path: string;
-    icon: any;
-    description: string;
-  }[] = [];
-
-  if (user?.role === "admin" || user?.role === "cliente") {
-    menuItems = [
-      {
-        name: "B2B - Catálogo",
-        path: "/b2b/catalogo",
-        icon: Store,
-        description: "Catálogo de productos"
-      },
-      {
-        name: "B2B - Carrito",
-        path: "/b2b/carrito",
-        icon: ShoppingCart,
-        description: "Artículos en el carrito"
-      },
-      {
-        name: "B2B - Pedidos",
-        path: "/b2b/pedidos",
-        icon: Package,
-        description: "Historial de pedidos"
-      },
-      {
-        name: "Configuración",
-        path: "/settings",
-        icon: SettingsIcon,
-        description: "Preferencias del usuario"
-      }
-    ];
-  }
+  // ============================
+  // MENU PARA admin + cliente
+  // ============================
+  let menuItems = [
+    {
+      name: "Promociones",
+      path: "/",
+      icon: Store,
+      description: "Promos disponibles"
+    },
+    {
+      name: "Catálogo",
+      path: "/b2b/catalogo",
+      icon: Store,
+      description: "Productos disponibles"
+    },
+    {
+      name: "Carrito",
+      path: "/b2b/carrito",
+      icon: ShoppingCart,
+      description: "Ver artículos agregados"
+    },
+    {
+      name: "Pedidos",
+      path: "/b2b/pedidos",
+      icon: Package,
+      description: "Historial de pedidos"
+    },
+    {
+      name: "Configuración",
+      path: "/settings",
+      icon: SettingsIcon,
+      description: "Preferencias del usuario"
+    }
+  ];
 
   return (
     <>
       <header className="w-full bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-2">
+
+          {/* LEFT */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -160,15 +160,17 @@ const Navigation: React.FC = () => {
             </div>
           </div>
 
+          {/* RIGHT */}
           <div className="flex items-center gap-4 relative">
-            {/* 🔔 Notificaciones */}
+
+            {/* NOTIFICATIONS */}
             <div className="relative">
               <button
-                className="relative p-2"
                 onClick={() => {
                   setNotisAbiertas(!notisAbiertas);
                   if (!notisAbiertas) marcarLeidas();
                 }}
+                className="relative p-2"
               >
                 <Bell size={20} />
                 {sinLeer > 0 && (
@@ -203,7 +205,7 @@ const Navigation: React.FC = () => {
               )}
             </div>
 
-            {/* 🧑 Usuario */}
+            {/* USER MENU */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -237,11 +239,13 @@ const Navigation: React.FC = () => {
                 </div>
               )}
             </div>
+
           </div>
+
         </div>
       </header>
 
-      {/* 🌟 SIDEBAR */}
+      {/* SIDEBAR */}
       {sidebarOpen && (
         <>
           <div
@@ -291,6 +295,7 @@ const Navigation: React.FC = () => {
                 );
               })}
             </nav>
+
           </div>
         </>
       )}
