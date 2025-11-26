@@ -8,35 +8,20 @@ import {
 
 import Navigation from "./components/Navigation";
 
-import SearchPage from "./pages/SearchPage";
-import Bonificaciones from "./pages/Bonificaciones";
-import RechazosForm from "./pages/RechazosForm";
-import CoordsPage from "./pages/CoordsPage";
-import NotasCredito from "./pages/NotasCredito";
-import GpsLogger from "./pages/GpsLogger";
-import Settings from "./pages/Settings";
-import Login from "./pages/Login";
-import Informacion from "./pages/Informacion";
-import SupervisorPage from "./pages/SupervisorPage";
-import ChatPage from "./pages/ChatPage";
-import AdminPanel from "./pages/AdminPanel";
-import PlanillaCarga from "./pages/PlanillaCarga";
-import Mapa from "./pages/Mapa";
-import PowerBIPage from "./pages/PowerBIPage";
-
-import BajaClienteCambioRuta from "./pages/BajaClienteCambioRuta";
-import RevisarBajas from "./pages/RevisarBajas";
-
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useVersionChecker } from "./hooks/useVersionChecker";
 import UpdateBanner from "./components/UpdateBanner";
 
-// 🔹 B2B PAGES
+// 🔹 Páginas B2B
 import CatalogoB2B from "./pages/b2b/Catalogo";
 import CarritoB2B from "./pages/b2b/Carrito";
 import PedidosB2B from "./pages/b2b/Pedidos";
 
-// 🔹 ChatBot components
+// 🔹 Básicas
+import Settings from "./pages/Settings";
+import Login from "./pages/Login";
+
+// 🔹 ChatBot
 import ChatBubble from "./components/ChatBubble";
 import ChatBot from "./components/ChatBot";
 
@@ -47,110 +32,54 @@ function ProtectedApp() {
 
   const [openChat, setOpenChat] = useState(false);
 
-  // NO logueado ⇒ Login
+  // ❌ NO logueado ⇒ Login
   if (!user) return <Login />;
 
   const role = user.role;
   let allowedRoutes;
 
   // ---------------------------
-  // 🚀 1) VENDEDOR
+  // 🚀 ADMIN
   // ---------------------------
-  if (role === "vendedor") {
+  if (role === "admin") {
     allowedRoutes = (
       <Routes>
-        <Route path="/" element={<SearchPage />} />
-        <Route path="/bonificaciones" element={<Bonificaciones />} />
-        <Route path="/notas-credito" element={<NotasCredito />} />
-        <Route path="/gps-logger" element={<GpsLogger />} />
-        <Route path="/informacion" element={<Informacion />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/baja-cliente" element={<BajaClienteCambioRuta />} />
-      </Routes>
-    );
-  }
-
-  // ---------------------------
-  // 🚀 2) SUPERVISOR
-  // ---------------------------
-  else if (role === "supervisor") {
-    allowedRoutes = (
-      <Routes>
-        <Route path="/" element={<SearchPage />} />
-        <Route path="/bonificaciones" element={<Bonificaciones />} />
-        <Route path="/notas-credito" element={<NotasCredito />} />
-        <Route path="/gps-logger" element={<GpsLogger />} />
-        <Route path="/informacion" element={<Informacion />} />
-        <Route path="/supervisor" element={<SupervisorPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/mapa" element={<Mapa />} />
-        <Route path="/powerbi" element={<PowerBIPage />} />
-        <Route path="/revisar-bajas" element={<RevisarBajas />} />
-      </Routes>
-    );
-  }
-
-  // ---------------------------
-  // 🚀 3) LOGÍSTICA
-  // ---------------------------
-  else if (role === "logistica") {
-    allowedRoutes = (
-      <Routes>
-        <Route path="/rechazos/nuevo" element={<RechazosForm />} />
-        <Route path="/coordenadas" element={<CoordsPage />} />
-        <Route path="/informacion" element={<Informacion />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-    );
-  }
-
-  // ---------------------------
-  // 🚀 4) ADMIN (incluye B2B)
-  // ---------------------------
-  else if (role === "admin") {
-    allowedRoutes = (
-      <Routes>
-        <Route path="/" element={<SearchPage />} />
-        <Route path="/bonificaciones" element={<Bonificaciones />} />
-        <Route path="/rechazos/nuevo" element={<RechazosForm />} />
-        <Route path="/coordenadas" element={<CoordsPage />} />
-        <Route path="/notas-credito" element={<NotasCredito />} />
-        <Route path="/gps-logger" element={<GpsLogger />} />
-        <Route path="/informacion" element={<Informacion />} />
-        <Route path="/supervisor" element={<SupervisorPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/planilla-carga" element={<PlanillaCarga />} />
-        <Route path="/mapa" element={<Mapa />} />
-        <Route path="/powerbi" element={<PowerBIPage />} />
-        <Route path="/revisar-bajas" element={<RevisarBajas />} />
-
-        {/* 🌟 B2B */}
         <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
         <Route path="/b2b/carrito" element={<CarritoB2B />} />
         <Route path="/b2b/pedidos" element={<PedidosB2B />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<CatalogoB2B />} />
       </Routes>
     );
   }
 
   // ---------------------------
-  // 🚀 5) Default
+  // 🚀 CLIENTE
+  // ---------------------------
+  else if (role === "cliente") {
+    allowedRoutes = (
+      <Routes>
+        <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
+        <Route path="/b2b/carrito" element={<CarritoB2B />} />
+        <Route path="/b2b/pedidos" element={<PedidosB2B />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<CatalogoB2B />} />
+      </Routes>
+    );
+  }
+
+  // ---------------------------
+  // 🚀 Default (por si acaso)
   // ---------------------------
   else {
     allowedRoutes = (
       <Routes>
-        <Route path="/" element={<SearchPage />} />
+        <Route path="*" element={<Login />} />
       </Routes>
     );
   }
 
-  // ---------------------------
-  // 🌟 Mostrar ChatBot SOLO en B2B
-  // ---------------------------
+  // Mostrar ChatBot SOLO en rutas B2B
   const showChatBot =
     location.pathname.startsWith("/b2b") ||
     location.pathname === "/b2b/catalogo" ||
