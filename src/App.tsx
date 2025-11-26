@@ -7,114 +7,72 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import NavigationB2B from "./components/NavigationB2B";
 
-import Promos from "./pages/b2b/Promos";
-import Catalogo from "./pages/b2b/Catalogo";
-import Carrito from "./pages/b2b/Carrito";
-import Pedidos from "./pages/b2b/Pedidos";
-import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 
-import Navigation from "./components/Navigation";
+// B2B pages
+import Promos from "./pages/b2b/Promos";
+import CatalogoB2B from "./pages/b2b/Catalogo";
+import CarritoB2B from "./pages/b2b/Carrito";
+import PedidosB2B from "./pages/b2b/Pedidos";
+import SettingsB2B from "./pages/b2b/Settings";
+
 import ChatBubble from "./components/ChatBubble";
 import ChatBot from "./components/ChatBot";
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-}
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 
-function AppContent() {
+function ProtectedApp() {
   const { user } = useAuth();
-  const location = useLocation();
   const [openChat, setOpenChat] = useState(false);
+  const location = useLocation();
 
-  // Si está logueado y está en login → redirigir a Promos
-  if (user && location.pathname === "/login") {
-    return <Navigate to="/promos" replace />;
-  }
+  if (!user) return <Login />;
+
+  const isB2B = true; // siempre B2B en este proyecto
+
+  const showChatBot =
+    location.pathname.startsWith("/b2b") &&
+    !openChat;
 
   return (
-    <>
-      {user && <Navigation />}
+    <div className="min-h-screen flex flex-col bg-white text-gray-900">
+      <NavigationB2B />
 
-      <main>
+      <main className="flex-1">
         <Routes>
-          {/* LOGIN */}
-          <Route path="/login" element={<Login />} />
-
-          {/* PÁGINA PRINCIPAL */}
-          <Route
-            path="/promos"
-            element={
-              <ProtectedRoute>
-                <Promos />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* B2B */}
-          <Route
-            path="/catalogo"
-            element={
-              <ProtectedRoute>
-                <Catalogo />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/carrito"
-            element={
-              <ProtectedRoute>
-                <Carrito />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/pedidos"
-            element={
-              <ProtectedRoute>
-                <Pedidos />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* DEFAULT */}
-          <Route path="*" element={<Navigate to="/promos" replace />} />
+          {/* Inicio → Promos */}
+          <Route path="/" element={<Navigate to="/b2b/promos" />} />
+          <Route path="/b2b/promos" element={<Promos />} />
+          <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
+          <Route path="/b2b/carrito" element={<CarritoB2B />} />
+          <Route path="/b2b/pedidos" element={<PedidosB2B />} />
+          <Route path="/b2b/settings" element={<SettingsB2B />} />
         </Routes>
       </main>
 
-      {/* CHATBOT */}
-      {user && !openChat && (
+      {/* BURBUJA CHAT */}
+      {showChatBot && !openChat && (
         <ChatBubble onOpen={() => setOpenChat(true)} />
       )}
 
-      {user && openChat && (
+      {showChatBot && openChat && (
         <ChatBot onClose={() => setOpenChat(false)} />
       )}
-    </>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <CartProvider>
+        <Router>
+          <ProtectedApp />
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }
