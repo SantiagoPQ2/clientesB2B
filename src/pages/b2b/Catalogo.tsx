@@ -50,7 +50,7 @@ const CatalogoB2B: React.FC = () => {
 
     const all = (data as Producto[]) || [];
 
-    // Excluir productos marcados como combo (van a Promos)
+    // Excluir combos del catálogo (van a Promos)
     const sinCombos = all.filter((p) => {
       if (!p.combo) return true;
       return !String(p.combo).toLowerCase().includes("combo");
@@ -74,7 +74,7 @@ const CatalogoB2B: React.FC = () => {
     new Set(productos.map((p) => p.categoria).filter(Boolean))
   );
 
-  // Marcas disponibles (según categoría activa si hay)
+  // Marcas disponibles (según categoría activa)
   const marcas = Array.from(
     new Set(
       productos
@@ -103,7 +103,7 @@ const CatalogoB2B: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="flex flex-col gap-4 mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Catálogo B2B</h2>
           <p className="text-sm text-gray-500">
@@ -111,10 +111,10 @@ const CatalogoB2B: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* CONTENIDO PRINCIPAL (3 columnas) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* CONTENIDO PRINCIPAL */}
           <div className="lg:col-span-3">
-            {/* 1) Vista de categorías grandes */}
+            {/* Vista de categorías grandes */}
             {categoriaActiva === "" && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
@@ -125,7 +125,7 @@ const CatalogoB2B: React.FC = () => {
                     No hay productos para mostrar.
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {categorias.map((c) => (
                       <button
                         key={c}
@@ -142,7 +142,7 @@ const CatalogoB2B: React.FC = () => {
               </div>
             )}
 
-            {/* 2) Vista de productos de una categoría */}
+            {/* Vista de productos de una categoría */}
             {categoriaActiva !== "" && (
               <div className="flex flex-col gap-4">
                 {/* Barra superior */}
@@ -167,11 +167,10 @@ const CatalogoB2B: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Layout filtros + productos */}
+                {/* Filtros + productos */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Filtros */}
                   <div className="md:col-span-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-fit">
-                    {/* Buscador */}
                     <div className="mb-4">
                       <label className="text-xs font-semibold text-gray-500 uppercase">
                         Buscar
@@ -184,7 +183,6 @@ const CatalogoB2B: React.FC = () => {
                       />
                     </div>
 
-                    {/* Marca */}
                     <div className="mb-2">
                       <label className="text-xs font-semibold text-gray-500 uppercase">
                         Marca
@@ -211,7 +209,7 @@ const CatalogoB2B: React.FC = () => {
                         No hay productos para mostrar.
                       </div>
                     ) : (
-                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {filtrados.map((p) => (
                           <div
                             key={p.id}
@@ -288,7 +286,7 @@ const CatalogoB2B: React.FC = () => {
           </div>
 
           {/* CARRITO LATERAL */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
               secondaryLabel="Ver promociones"
