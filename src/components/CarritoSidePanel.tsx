@@ -71,7 +71,7 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 w-full lg:w-[320px] xl:w-[360px] lg:sticky lg:top-20">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 w-full lg:w-[400px] xl:w-[430px] lg:sticky lg:top-20">
       <h3 className="text-base font-semibold text-gray-900 mb-1">
         Tu carrito
       </h3>
@@ -101,8 +101,12 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
                       <p className="font-semibold text-gray-800 line-clamp-2">
                         {p.nombre}
                       </p>
+
+                      {/* 👇 Eliminado completamente detalle marca/categoría */}
+                      {/* Antes era: x{qty} • {p.marca} • {p.categoria} */}
+
                       <p className="text-[11px] text-gray-500">
-                        x{qty} • {p.marca} • {p.categoria}
+                        x{qty}
                       </p>
                     </div>
                     <div className="text-right">
