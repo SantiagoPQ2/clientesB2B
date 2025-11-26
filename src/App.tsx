@@ -1,22 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// B2B pages
+import Promos from "./pages/b2b/Promos";
 import Catalogo from "./pages/b2b/Catalogo";
 import Carrito from "./pages/b2b/Carrito";
 import Pedidos from "./pages/b2b/Pedidos";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 
-// Navigation
 import Navigation from "./components/Navigation";
+import ChatBubble from "./components/ChatBubble";
+import ChatBot from "./components/ChatBot";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { user } = useAuth();
@@ -24,63 +26,85 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
   return children;
 }
 
-function AppRoutes() {
+function AppContent() {
   const { user } = useAuth();
-  
-  // Ya logueado → no volver al login
-  if (user && window.location.pathname === "/login") {
-    return <Navigate to="/catalogo" replace />;
+  const location = useLocation();
+  const [openChat, setOpenChat] = useState(false);
+
+  // Si está logueado y está en login → redirigir a Promos
+  if (user && location.pathname === "/login") {
+    return <Navigate to="/promos" replace />;
   }
 
   return (
     <>
-      {/* Navigation arriba solo si hay usuario */}
       {user && <Navigation />}
 
-      <Routes>
-        {/* LOGIN */}
-        <Route path="/login" element={<Login />} />
+      <main>
+        <Routes>
+          {/* LOGIN */}
+          <Route path="/login" element={<Login />} />
 
-        {/* RUTAS PROTEGIDAS */}
-        <Route
-          path="/catalogo"
-          element={
-            <ProtectedRoute>
-              <Catalogo />
-            </ProtectedRoute>
-          }
-        />
+          {/* PÁGINA PRINCIPAL */}
+          <Route
+            path="/promos"
+            element={
+              <ProtectedRoute>
+                <Promos />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/carrito"
-          element={
-            <ProtectedRoute>
-              <Carrito />
-            </ProtectedRoute>
-          }
-        />
+          {/* B2B */}
+          <Route
+            path="/catalogo"
+            element={
+              <ProtectedRoute>
+                <Catalogo />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/pedidos"
-          element={
-            <ProtectedRoute>
-              <Pedidos />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/carrito"
+            element={
+              <ProtectedRoute>
+                <Carrito />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/pedidos"
+            element={
+              <ProtectedRoute>
+                <Pedidos />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* DEFAULT */}
-        <Route path="*" element={<Navigate to="/catalogo" replace />} />
-      </Routes>
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* DEFAULT */}
+          <Route path="*" element={<Navigate to="/promos" replace />} />
+        </Routes>
+      </main>
+
+      {/* CHATBOT */}
+      {user && !openChat && (
+        <ChatBubble onOpen={() => setOpenChat(true)} />
+      )}
+
+      {user && openChat && (
+        <ChatBot onClose={() => setOpenChat(false)} />
+      )}
     </>
   );
 }
@@ -89,7 +113,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppRoutes />
+        <AppContent />
       </Router>
     </AuthProvider>
   );
