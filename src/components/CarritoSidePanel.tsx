@@ -71,7 +71,7 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 lg:sticky lg:top-20">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 w-full lg:w-[320px] xl:w-[360px] lg:sticky lg:top-20">
       <h3 className="text-base font-semibold text-gray-900 mb-1">
         Tu carrito
       </h3>
