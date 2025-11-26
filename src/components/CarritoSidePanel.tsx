@@ -1,161 +1,99 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabase";
+import { useNavigate } from "react-router-dom";
+
+interface ItemCarrito {
+  id: string;
+  cantidad: number;
+}
 
 interface Producto {
   id: string;
-  articulo: string;
   nombre: string;
-  marca: string;
-  categoria: string;
   precio: number;
-  stock: number;
   imagen_url?: string;
+  articulo: string;
 }
 
-interface CarritoSidePanelProps {
-  carrito: Record<string, number>;
-  secondaryLabel: string;
-  secondaryPath: string;
-}
-
-const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
-  carrito,
-  secondaryLabel,
-  secondaryPath,
-}) => {
+const CarritoSidePanel = ({ carrito }: { carrito: Record<string, number> }) => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const cargarProductosCarrito = async () => {
-      const ids = Object.keys(carrito).filter(Boolean);
-      if (ids.length === 0) {
-        setProductos([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("z_productos")
-        .select("*")
-        .in("id", ids);
-
-      if (error) {
-        console.error("Error cargando productos del carrito:", error);
-        setProductos([]);
-        return;
-      }
-
-      setProductos((data as Producto[]) || []);
-    };
-
-    cargarProductosCarrito();
+    cargarProductos();
   }, [carrito]);
 
-  const totalItems = Object.values(carrito).reduce(
-    (acc, v) => acc + (v || 0),
+  const cargarProductos = async () => {
+    const ids = Object.keys(carrito);
+    if (ids.length === 0) return setProductos([]);
+
+    const { data } = await supabase
+      .from("z_productos")
+      .select("*")
+      .in("id", ids);
+
+    setProductos((data as Producto[]) || []);
+  };
+
+  const total = productos.reduce(
+    (acc, p) => acc + p.precio * (carrito[p.id] || 0),
     0
   );
 
-  const total = productos.reduce((acc, p) => {
-    const qty = carrito[p.id] || 0;
-    return acc + (p.precio || 0) * qty;
-  }, 0);
-
-  const handleVerCarrito = () => {
-    navigate("/b2b/carrito");
-  };
-
-  const handleSecondary = () => {
-    navigate(secondaryPath);
-  };
-
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 w-full lg:w-[320px] xl:w-[360px] lg:sticky lg:top-20">
-      <h3 className="text-base font-semibold text-gray-900 mb-1">
-        Tu carrito
-      </h3>
-      <p className="text-xs text-gray-500 mb-3">
-        {totalItems === 0
-          ? "Aún no agregaste productos."
-          : `Tenés ${totalItems} ítem${totalItems > 1 ? "s" : ""} en el carrito.`}
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 w-full lg:w-[350px] xl:w-[380px] sticky top-10 h-fit">
+
+      <h3 className="font-semibold text-lg mb-1">Tu carrito</h3>
+      <p className="text-sm text-gray-500 mb-4">
+        Tenés {Object.values(carrito).reduce((a, b) => a + b, 0)} ítems en el carrito.
       </p>
 
-      <div className="max-h-56 overflow-y-auto mb-3 border border-gray-100 rounded-lg">
-        {totalItems === 0 ? (
-          <div className="text-xs text-gray-400 text-center py-4">
-            Agregá productos o promociones para verlos acá.
+      <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+
+        {productos.map((p) => (
+          <div
+            key={p.id}
+            className="border-b pb-2 flex justify-between items-start"
+          >
+            <div className="flex flex-col">
+              <p className="text-sm font-semibold">{p.nombre}</p>
+              <p className="text-[11px] text-gray-500">
+                x{carrito[p.id]}
+              </p>
+            </div>
+
+            <p className="text-sm font-semibold text-gray-700">
+              $
+              {(p.precio * carrito[p.id]).toLocaleString("es-AR")}
+            </p>
           </div>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {productos.map((p) => {
-              const qty = carrito[p.id] || 0;
-              if (!qty) return null;
+        ))}
 
-              const subtotal = (p.precio || 0) * qty;
-
-              return (
-                <li key={p.id} className="px-3 py-2 text-xs">
-                  <div className="flex justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800 line-clamp-2">
-                        {p.nombre}
-                      </p>
-                      <p className="text-[11px] text-gray-500">
-                        x{qty} • {p.marca} • {p.categoria}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-800">
-                        $
-                        {subtotal.toLocaleString("es-AR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600 font-semibold">Total</span>
-          <span className="text-lg font-bold text-red-600">
-            $
-            {total.toLocaleString("es-AR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
-
-        <button
-          onClick={handleVerCarrito}
-          disabled={totalItems === 0}
-          className={`w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition
-            ${
-              totalItems === 0
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-red-600 hover:bg-red-700 text-white"
-            }`}
-        >
-          Ver carrito final
-        </button>
-
-        <button
-          onClick={handleSecondary}
-          className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
-        >
-          {secondaryLabel}
-        </button>
+      <div className="mt-4 border-t pt-3 flex justify-between items-center">
+        <p className="font-semibold text-gray-800">Total</p>
+        <p className="font-bold text-red-600 text-lg">
+          ${total.toLocaleString("es-AR")}
+        </p>
       </div>
+
+      <button
+        onClick={() => navigate("/b2b/carrito")}
+        className="mt-4 w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg"
+      >
+        Ver carrito final
+      </button>
+
+      <button
+        onClick={() => navigate("/b2b/catalogo")}
+        className="mt-2 w-full py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg"
+      >
+        Ver catálogo
+      </button>
     </div>
   );
 };
 
 export default CarritoSidePanel;
+
