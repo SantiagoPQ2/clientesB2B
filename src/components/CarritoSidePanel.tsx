@@ -17,12 +17,16 @@ interface CarritoSidePanelProps {
   carrito: Record<string, number>;
   secondaryLabel: string;
   secondaryPath: string;
+  primaryLabel?: string;
+  onPrimaryClick?: () => void; // ⬅️ NECESARIO PARA EL MODAL
 }
 
 const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   carrito,
   secondaryLabel,
   secondaryPath,
+  primaryLabel = "Ver carrito final",
+  onPrimaryClick,
 }) => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const navigate = useNavigate();
@@ -62,8 +66,12 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
     return acc + (p.precio || 0) * qty;
   }, 0);
 
-  const handleVerCarrito = () => {
-    navigate("/b2b/carrito");
+  const handlePrimary = () => {
+    if (onPrimaryClick) {
+      onPrimaryClick(); // ⬅️ DISPARA EL MODAL
+    } else {
+      navigate("/b2b/carrito-final"); // fallback
+    }
   };
 
   const handleSecondary = () => {
@@ -102,9 +110,6 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
                         {p.nombre}
                       </p>
 
-                      {/* 👇 Eliminado completamente detalle marca/categoría */}
-                      {/* Antes era: x{qty} • {p.marca} • {p.categoria} */}
-
                       <p className="text-[11px] text-gray-500">
                         x{qty}
                       </p>
@@ -138,8 +143,9 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
           </span>
         </div>
 
+        {/* BOTÓN PRINCIPAL (MODAL O CARRITO) */}
         <button
-          onClick={handleVerCarrito}
+          onClick={handlePrimary}
           disabled={totalItems === 0}
           className={`w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition
             ${
@@ -148,9 +154,10 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
                 : "bg-red-600 hover:bg-red-700 text-white"
             }`}
         >
-          Ver carrito final
+          {primaryLabel}
         </button>
 
+        {/* BOTÓN SECUNDARIO */}
         <button
           onClick={handleSecondary}
           className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
