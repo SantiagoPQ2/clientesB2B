@@ -63,7 +63,6 @@ const PromosB2B: React.FC = () => {
     guardarCarrito(nuevo);
   };
 
-  // interceptamos el botón "Ver carrito final"
   const handleVerCarritoFinal = () => {
     setShowModal(true);
   };
@@ -155,7 +154,7 @@ const PromosB2B: React.FC = () => {
             )}
           </div>
 
-          {/* CARRITO LATERAL */}
+          {/* CARRITO */}
           <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
@@ -171,6 +170,7 @@ const PromosB2B: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
+
             <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
               ¿Querés algo más?
             </h2>
@@ -180,18 +180,21 @@ const PromosB2B: React.FC = () => {
             </p>
 
             <div className="flex flex-col gap-3">
+
+              {/* BOTÓN ROJO */}
               <button
                 onClick={() => {
                   setShowModal(false);
                   navigate("/b2b/catalogo");
                 }}
-                className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                className="w-full py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition"
               >
                 Ver catálogo
               </button>
 
+              {/* BOTÓN IR AL CARRITO */}
               <button
-                onClick={() => navigate("/b2b/carrito-final")}
+                onClick={() => navigate("/b2b/carrito")}
                 className="w-full py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
               >
                 Ir al carrito final
@@ -204,6 +207,7 @@ const PromosB2B: React.FC = () => {
                 Cancelar
               </button>
             </div>
+
           </div>
         </div>
       )}
