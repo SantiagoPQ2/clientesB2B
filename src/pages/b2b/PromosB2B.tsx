@@ -19,6 +19,7 @@ const PromosB2B: React.FC = () => {
   const [promos, setPromos] = useState<Producto[]>([]);
   const [carrito, setCarrito] = useState<Record<string, number>>({});
   const [anim, setAnim] = useState<Record<string, boolean>>({});
+  const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -62,10 +63,16 @@ const PromosB2B: React.FC = () => {
     guardarCarrito(nuevo);
   };
 
+  // interceptamos el botón "Ver carrito final"
+  const handleVerCarritoFinal = () => {
+    setShowModal(true);
+  };
+
   return (
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          
           {/* PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
@@ -73,14 +80,14 @@ const PromosB2B: React.FC = () => {
                 No hay promociones disponibles en este momento.
               </div>
             ) : (
-              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
                 {promos.map((p) => (
                   <div
                     key={p.id}
                     className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                   >
                     {/* Imagen */}
-                    <div className="h-40 bg-gray-50 flex items-center justify-center">
+                    <div className="h-52 bg-gray-50 flex items-center justify-center">
                       {p.imagen_url ? (
                         <img
                           src={p.imagen_url}
@@ -106,7 +113,7 @@ const PromosB2B: React.FC = () => {
                         {p.nombre}
                       </h3>
 
-                      <p className="text-xs text-gray-500 mt-1 mb-3">
+                      <p className="text-xs text-gray-500 mt-1 mb-4">
                         {p.marca} • {p.categoria}
                       </p>
 
@@ -115,7 +122,7 @@ const PromosB2B: React.FC = () => {
                           <p className="text-[10px] text-gray-400 uppercase">
                             Precio promo
                           </p>
-                          <p className="text-lg font-bold text-red-600">
+                          <p className="text-xl font-bold text-red-600">
                             $
                             {(p.precio ?? 0).toLocaleString("es-AR", {
                               minimumFractionDigits: 2,
@@ -128,7 +135,7 @@ const PromosB2B: React.FC = () => {
                           disabled={p.stock <= 0}
                           onClick={() => agregar(p.id)}
                           className={`
-                            px-3 py-2 rounded-lg text-xs font-semibold transition shadow
+                            px-4 py-2 rounded-lg text-xs font-semibold transition shadow
                             ${
                               p.stock <= 0
                                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -154,10 +161,52 @@ const PromosB2B: React.FC = () => {
               carrito={carrito}
               secondaryLabel="Ver catálogo"
               secondaryPath="/b2b/catalogo"
+              onPrimaryClick={handleVerCarritoFinal}
             />
           </div>
         </div>
       </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+              ¿Querés algo más?
+            </h2>
+
+            <p className="text-gray-500 text-center mb-6">
+              Podés seguir navegando o finalizar tu compra.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  navigate("/b2b/catalogo");
+                }}
+                className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+              >
+                Ver catálogo
+              </button>
+
+              <button
+                onClick={() => navigate("/b2b/carrito-final")}
+                className="w-full py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+              >
+                Ir al carrito final
+              </button>
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-sm text-gray-400 hover:text-gray-600 mt-2"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
