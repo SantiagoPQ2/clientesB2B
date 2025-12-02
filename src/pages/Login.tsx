@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext"
 
 export default function Login() {
   const { login } = useAuth()
+
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [mail, setMail] = useState("")
@@ -14,42 +15,60 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const ok = await login(username, password)
-    if (!ok) setError("❌ Usuario o contraseña incorrectos")
-    else window.location.href = "/" // redirige al home
+
+    if (!ok) {
+      setError("❌ Usuario o contraseña incorrectos")
+    } else {
+      window.location.href = "/" // redirige al home
+    }
   }
 
-  // 🔹 Recuperar contraseña (simulado por ahora)
+  // 🔹 Recuperar contraseña (REAL con Edge Function)
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!mail) {
       setError("⚠️ Ingresá tu correo para recuperar la contraseña")
       return
     }
 
-    const { data, error } = await supabase
-      .from("usuarios_app")
-      .select("username, mail")
-      .eq("mail", mail)
-      .single()
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enviar_reset`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: mail }),
+        }
+      )
 
-    if (error || !data) {
-      setError("❌ No se encontró una cuenta con ese correo")
-    } else {
-      // acá podrías integrar Supabase Auth o SendGrid
+      const json = await res.json()
+
+      if (!res.ok) {
+        setError("❌ No existe ese correo en nuestros registros")
+        return
+      }
+
+      // ÉXITO
       setMode("success")
       setError("")
+    } catch (err: any) {
+      setError("❌ Error enviando el correo")
     }
   }
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-200 to-gray-100">
       <div className="bg-white p-8 rounded-xl shadow-xl w-96 border-t-8 border-[#8B0000] transition-all hover:scale-[1.01] duration-300">
+
+        {/* 🔻 ENCABEZADO */}
         <div className="text-center mb-6">
           <img
             src="/image.png"
             alt="VaFood Logo"
             className="mx-auto h-16 w-16 rounded-full shadow-lg"
           />
+
           <h2 className="text-2xl font-bold text-[#8B0000] mt-3">
             {mode === "login"
               ? "Iniciar Sesión"
@@ -57,6 +76,7 @@ export default function Login() {
               ? "Recuperar Contraseña"
               : "Correo Enviado"}
           </h2>
+
           <p className="text-gray-600 text-sm">
             {mode === "success"
               ? "Revisá tu bandeja de entrada"
@@ -64,7 +84,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* 🔸 LOGIN */}
+        {/* 🔻 LOGIN */}
         {mode === "login" && (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <p className="text-red-600 text-sm text-center">{error}</p>}
@@ -76,6 +96,7 @@ export default function Login() {
               onChange={(e) => setUsername(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#8B0000] outline-none"
             />
+
             <input
               type="password"
               placeholder="Contraseña"
@@ -107,7 +128,7 @@ export default function Login() {
           </form>
         )}
 
-        {/* 🔸 RECUPERAR CONTRASEÑA */}
+        {/* 🔻 RECUPERAR CONTRASEÑA */}
         {mode === "recover" && (
           <form onSubmit={handleRecover} className="space-y-4">
             {error && <p className="text-red-600 text-sm text-center">{error}</p>}
@@ -132,7 +153,11 @@ export default function Login() {
               <button
                 type="button"
                 className="text-[#8B0000] font-semibold hover:underline"
-                onClick={() => setMode("login")}
+                onClick={() => {
+                  setMode("login")
+                  setMail("")
+                  setError("")
+                }}
               >
                 Volver a iniciar sesión
               </button>
@@ -140,9 +165,10 @@ export default function Login() {
           </form>
         )}
 
-        {/* 🔸 CONFIRMACIÓN DE ENVÍO */}
+        {/* 🔻 CONFIRMACIÓN */}
         {mode === "success" && (
           <div className="text-center space-y-4">
+
             <div className="flex justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -163,9 +189,10 @@ export default function Login() {
             <h2 className="text-xl font-bold text-[#8B0000]">
               ¡Correo de recuperación enviado!
             </h2>
+
             <p className="text-gray-600 text-sm">
               Te enviamos un correo con las instrucciones para restablecer tu
-              contraseña. Revisa tu bandeja de entrada o la carpeta de spam.
+              contraseña. Revisá tu bandeja de entrada o spam.
             </p>
 
             <button
@@ -175,7 +202,7 @@ export default function Login() {
               }}
               className="w-full bg-[#8B0000] text-white py-2 rounded-lg font-semibold hover:bg-red-900 transition mt-4"
             >
-              Volver al inicio de sesión
+              Volver al inicio
             </button>
           </div>
         )}
