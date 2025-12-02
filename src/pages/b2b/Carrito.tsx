@@ -49,6 +49,9 @@ const CarritoB2B: React.FC = () => {
     0
   );
 
+  const descuento = total * 0.12;
+  const totalConDescuento = total - descuento;
+
   const cambiarCantidad = (id: string, nuevaCantidad: number) => {
     const current = carrito[id] || 0;
     if (nuevaCantidad <= 0) {
@@ -68,7 +71,7 @@ const CarritoB2B: React.FC = () => {
       .from("z_pedidos")
       .insert({
         created_by: "admin",
-        total: total,
+        total: totalConDescuento, // se guarda el total ya con descuento
       })
       .select()
       .single();
@@ -108,7 +111,6 @@ const CarritoB2B: React.FC = () => {
   return (
     <div className="w-full">
       <div className="max-w-5xl mx-auto px-4 py-6">
-
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
@@ -132,7 +134,6 @@ const CarritoB2B: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
             {/* LISTA DE PRODUCTOS */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-100">
               <div className="border-b border-gray-100 px-4 py-3 flex justify-between text-sm text-gray-500">
@@ -146,24 +147,38 @@ const CarritoB2B: React.FC = () => {
                   const subtotal = p.precio * qty;
 
                   return (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3 sm:gap-4">
+                    <div
+                      key={p.id}
+                      className="px-4 py-3 flex items-center gap-3 sm:gap-4"
+                    >
                       <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
                         {p.imagen_url ? (
-                          <img src={p.imagen_url} alt={p.nombre} className="max-h-full object-contain" />
+                          <img
+                            src={p.imagen_url}
+                            alt={p.nombre}
+                            className="max-h-full object-contain"
+                          />
                         ) : (
-                          <span className="text-[10px] text-gray-400 text-center px-1">{p.articulo}</span>
+                          <span className="text-[10px] text-gray-400 text-center px-1">
+                            {p.articulo}
+                          </span>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">{p.nombre}</p>
-                            <p className="text-xs text-gray-500">{p.marca} • {p.categoria}</p>
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                              {p.nombre}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {p.marca} • {p.categoria}
+                            </p>
                             <p className="text-xs text-gray-400 mt-1">
                               Precio unitario:{" "}
                               <span className="font-semibold text-gray-700">
-                                ${p.precio.toLocaleString("es-AR", {
+                                $
+                                {p.precio.toLocaleString("es-AR", {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
                                 })}
@@ -173,7 +188,8 @@ const CarritoB2B: React.FC = () => {
 
                           <div className="text-right">
                             <p className="text-sm font-semibold text-red-600">
-                              ${subtotal.toLocaleString("es-AR", {
+                              $
+                              {subtotal.toLocaleString("es-AR", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               })}
@@ -214,23 +230,53 @@ const CarritoB2B: React.FC = () => {
               </div>
             </div>
 
-            {/* RESUMEN – AHORA RECORTADO */}
+            {/* RESUMEN CON DESCUENTO */}
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-5 flex flex-col gap-4 h-fit">
-
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Resumen del pedido</h3>
-                <p className="text-xs text-gray-500">Verificá los datos antes de confirmar.</p>
+                <h3 className="text-base font-semibold text-gray-900">
+                  Resumen del pedido
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Verificá los datos antes de confirmar.
+                </p>
               </div>
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Productos</span>
-                <span className="font-semibold text-gray-800">{totalItems} ítems</span>
+                <span className="font-semibold text-gray-800">
+                  {totalItems} ítems
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-semibold text-gray-800">
+                  $
+                  {total.toLocaleString("es-AR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-green-700">
+                <span>Descuento especial 12%</span>
+                <span>
+                  -$
+                  {descuento.toLocaleString("es-AR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
 
               <div className="border-t border-gray-100 pt-3 mt-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-700">Total</span>
+                <span className="text-sm font-semibold text-gray-700">
+                  Total con descuento
+                </span>
                 <span className="text-xl font-bold text-red-600">
-                  ${total.toLocaleString("es-AR", {
+                  $
+                  {totalConDescuento.toLocaleString("es-AR", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -250,13 +296,10 @@ const CarritoB2B: React.FC = () => {
                 Confirmar pedido
               </button>
 
-              {/* MENSAJE ADICIONAL */}
               <p className="text-[11px] text-gray-500 text-center mt-1">
                 La entrega se realizará dentro de las próximas 48 hs.
               </p>
-
             </div>
-
           </div>
         )}
       </div>
