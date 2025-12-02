@@ -19,7 +19,6 @@ const CatalogoB2B: React.FC = () => {
   const [filtroMarca, setFiltroMarca] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [carrito, setCarrito] = useState<Record<string, number>>({});
-  const [btnAnimacion, setBtnAnimacion] = useState<Record<string, boolean>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string>("");
 
   useEffect(() => {
@@ -58,14 +57,22 @@ const CatalogoB2B: React.FC = () => {
     setProductos(sinCombos);
   };
 
-  const agregarAlCarrito = (id: string) => {
-    setBtnAnimacion((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => {
-      setBtnAnimacion((prev) => ({ ...prev, [id]: false }));
-    }, 300);
+  const cambiarCantidad = (id: string, cantidad: number, stock?: number) => {
+    let nueva = Math.floor(cantidad || 0);
+    if (stock && stock > 0) nueva = Math.min(nueva, stock);
+    if (nueva <= 0) {
+      const copia = { ...carrito };
+      delete copia[id];
+      guardarCarrito(copia);
+    } else {
+      guardarCarrito({ ...carrito, [id]: nueva });
+    }
+  };
 
-    const nuevo = { ...carrito, [id]: (carrito[id] || 0) + 1 };
-    guardarCarrito(nuevo);
+  const agregarUno = (id: string, stock?: number) => {
+    const actual = carrito[id] || 0;
+    const nueva = stock && stock > 0 ? Math.min(actual + 1, stock) : actual + 1;
+    cambiarCantidad(id, nueva, stock);
   };
 
   const categorias = Array.from(
@@ -99,11 +106,9 @@ const CatalogoB2B: React.FC = () => {
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-
-          {/* =============== ZONA PRINCIPAL =============== */}
+          {/* ZONA PRINCIPAL */}
           <div className="lg:col-span-3">
-
-            {/* ===================== CATEGORÍAS GRANDES ===================== */}
+            {/* CATEGORÍAS GRANDES */}
             {categoriaActiva === "" && (
               <div>
                 <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-2">
@@ -122,13 +127,11 @@ const CatalogoB2B: React.FC = () => {
               </div>
             )}
 
-            {/* ===================== PRODUCTOS ===================== */}
+            {/* PRODUCTOS */}
             {categoriaActiva !== "" && (
               <div className="flex flex-col gap-6">
-
-                {/* FILTROS SUPERIORES */}
+                {/* FILTROS */}
                 <div className="bg-white w-full shadow-md rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-end gap-4">
-
                   {/* Buscar */}
                   <div className="flex-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase">
@@ -176,7 +179,7 @@ const CatalogoB2B: React.FC = () => {
                   </button>
                 </div>
 
-                {/* GRID DE PRODUCTOS */}
+                {/* GRID PRODUCTOS */}
                 <div>
                   {filtrados.length === 0 ? (
                     <div className="text-center text-gray-500 text-sm py-8 bg-white rounded-xl shadow-sm">
@@ -184,71 +187,115 @@ const CatalogoB2B: React.FC = () => {
                     </div>
                   ) : (
                     <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
-                      {filtrados.map((p) => (
-                        <div
-                          key={p.id}
-                          className="bg-white rounded-xl shadow-md border border-gray-100 
-                                     flex flex-col overflow-hidden hover:shadow-lg transition-shadow"
-                        >
+                      {filtrados.map((p) => {
+                        const qty = carrito[p.id] || 0;
+                        const maxed = p.stock > 0 && qty >= p.stock;
 
-                          {/* Imagen */}
-                          <div className="h-44 bg-gray-50 flex items-center justify-center">
-                            {p.imagen_url ? (
-                              <img
-                                src={p.imagen_url}
-                                alt={p.nombre}
-                                className="max-h-full object-contain"
-                              />
-                            ) : (
-                              <div className="text-center px-4">
-                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                  Sin imagen
+                        return (
+                          <div
+                            key={p.id}
+                            className="bg-white rounded-xl shadow-md border border-gray-100 
+                                       flex flex-col overflow-hidden hover:shadow-lg transition-shadow"
+                          >
+                            {/* Imagen */}
+                            <div className="h-44 bg-gray-50 flex items-center justify-center">
+                              {p.imagen_url ? (
+                                <img
+                                  src={p.imagen_url}
+                                  alt={p.nombre}
+                                  className="max-h-full object-contain"
+                                />
+                              ) : (
+                                <div className="text-center px-4">
+                                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                    Sin imagen
+                                  </div>
+                                  <div className="text-[10px] text-gray-400">
+                                    Código: {p.articulo}
+                                  </div>
                                 </div>
-                                <div className="text-[10px] text-gray-400">
-                                  Código: {p.articulo}
+                              )}
+                            </div>
+
+                            {/* Contenido */}
+                            <div className="flex-1 flex flex-col p-4">
+                              <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                                {p.nombre}
+                              </h3>
+
+                              <p className="text-xs text-gray-500 mt-1 mb-2">
+                                {p.marca}
+                              </p>
+
+                              <div className="mt-auto flex items-center justify-between">
+                                <div>
+                                  <p className="text-[11px] text-gray-400 uppercase">
+                                    Precio
+                                  </p>
+                                  <p className="text-xl font-bold text-red-600">
+                                    $
+                                    {p.precio.toLocaleString("es-AR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </p>
                                 </div>
+
+                                {/* Botón / contador */}
+                                {qty === 0 ? (
+                                  <button
+                                    disabled={p.stock <= 0}
+                                    onClick={() => agregarUno(p.id, p.stock)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition 
+                                      ${
+                                        p.stock <= 0
+                                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                          : "bg-red-600 hover:bg-red-700 text-white"
+                                      }`}
+                                  >
+                                    Agregar
+                                  </button>
+                                ) : (
+                                  <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+                                    <button
+                                      onClick={() =>
+                                        cambiarCantidad(p.id, qty - 1, p.stock)
+                                      }
+                                      className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+                                    >
+                                      −
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={qty}
+                                      onChange={(e) =>
+                                        cambiarCantidad(
+                                          p.id,
+                                          Number(e.target.value),
+                                          p.stock
+                                        )
+                                      }
+                                      className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
+                                    />
+                                    <button
+                                      onClick={() => agregarUno(p.id, p.stock)}
+                                      disabled={maxed}
+                                      className={`px-3 py-1.5 text-sm ${
+                                        maxed
+                                          ? "text-gray-300 cursor-not-allowed"
+                                          : "text-gray-600 hover:bg-gray-100"
+                                      }`}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-
-                          {/* Contenido */}
-                          <div className="flex-1 flex flex-col p-4">
-                            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                              {p.nombre}
-                            </h3>
-
-                            <p className="text-xs text-gray-500 mt-1 mb-2">{p.marca}</p>
-
-                            <div className="mt-auto flex items-center justify-between">
-                              <div>
-                                <p className="text-[11px] text-gray-400 uppercase">Precio</p>
-                                <p className="text-xl font-bold text-red-600">
-                                  $
-                                  {p.precio.toLocaleString("es-AR", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })}
-                                </p>
-                              </div>
-
-                              <button
-                                disabled={p.stock <= 0}
-                                onClick={() => agregarAlCarrito(p.id)}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition 
-                                  ${
-                                    p.stock <= 0
-                                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                      : btnAnimacion[p.id]
-                                      ? "bg-gray-300 text-gray-700 scale-105"
-                                      : "bg-red-600 hover:bg-red-700 text-white"
-                                  }`}
-                              >
-                                {btnAnimacion[p.id] ? "Añadido ✔" : "Agregar"}
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -256,7 +303,7 @@ const CatalogoB2B: React.FC = () => {
             )}
           </div>
 
-          {/* =============== CARRITO LATERAL =============== */}
+          {/* CARRITO LATERAL */}
           <div className="lg:col-span-1 lg:pl-6 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
@@ -264,7 +311,6 @@ const CatalogoB2B: React.FC = () => {
               secondaryPath="/"
             />
           </div>
-
         </div>
       </div>
     </div>
