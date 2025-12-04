@@ -13,9 +13,14 @@ import { useAuth } from "../context/AuthContext";
 import { useLocation, Link } from "react-router-dom";
 import { supabase } from "../config/supabase";
 
+// 🔎 Nuevo
+import SearchBar from "./SearchBar";
+import { useProductModal } from "../context/ProductModalContext";
+
 const Navigation: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const { openProductModal } = useProductModal(); // 🔎 importante
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,14 +32,10 @@ const Navigation: React.FC = () => {
   // Cerrar menú usuario al hacer click afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -68,8 +69,7 @@ const Navigation: React.FC = () => {
 
     const sub = supabase
       .channel("notificaciones")
-      .on(
-        "postgres_changes",
+      .on("postgres_changes",
         { event: "INSERT", schema: "public", table: "notificaciones" },
         (payload) => {
           if (payload.new.usuario_username === user?.username) {
@@ -87,74 +87,40 @@ const Navigation: React.FC = () => {
   // Títulos
   const getCurrentPageName = () => {
     switch (location.pathname) {
-      case "/":
-        return "Promociones";
-      case "/b2b/catalogo":
-        return "Catálogo";
-      case "/b2b/carrito":
-        return "Carrito";
-      case "/b2b/pedidos":
-        return "Pedidos";
-      case "/settings":
-        return "Configuración";
-      default:
-        return "VaFood B2B";
+      case "/": return "Promociones";
+      case "/b2b/catalogo": return "Catálogo";
+      case "/b2b/carrito": return "Carrito";
+      case "/b2b/pedidos": return "Pedidos";
+      case "/settings": return "Configuración";
+      default: return "VaFood B2B";
     }
   };
 
-  // ============================
-  // MENU PARA admin + cliente
-  // ============================
-  let menuItems = [
-    {
-      name: "Promociones",
-      path: "/",
-      icon: Store,
-      description: "Promos disponibles"
-    },
-    {
-      name: "Catálogo",
-      path: "/b2b/catalogo",
-      icon: Store,
-      description: "Productos disponibles"
-    },
-    {
-      name: "Carrito",
-      path: "/b2b/carrito",
-      icon: ShoppingCart,
-      description: "Ver artículos agregados"
-    },
-    {
-      name: "Pedidos",
-      path: "/b2b/pedidos",
-      icon: Package,
-      description: "Historial de pedidos"
-    },
-    {
-      name: "Configuración",
-      path: "/settings",
-      icon: SettingsIcon,
-      description: "Preferencias del usuario"
-    }
+  const menuItems = [
+    { name: "Promociones", path: "/", icon: Store, description: "Promos disponibles" },
+    { name: "Catálogo", path: "/b2b/catalogo", icon: Store, description: "Productos disponibles" },
+    { name: "Carrito", path: "/b2b/carrito", icon: ShoppingCart, description: "Ver artículos agregados" },
+    { name: "Pedidos", path: "/b2b/pedidos", icon: Package, description: "Historial de pedidos" },
+    { name: "Configuración", path: "/settings", icon: SettingsIcon, description: "Preferencias del usuario" }
   ];
 
   return (
     <>
-      <header className="w-full bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <header className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-2">
 
           {/* LEFT */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-red-600 transition"
+              className="p-2 text-gray-600 hover:text-red-600 transition"
             >
               <Menu size={24} />
             </button>
 
             <div className="flex items-center">
               <img src="/image.png" className="h-8 w-8 mr-2" />
-              <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              <h1 className="text-lg font-semibold text-gray-800">
                 {getCurrentPageName()}
               </h1>
             </div>
@@ -162,6 +128,9 @@ const Navigation: React.FC = () => {
 
           {/* RIGHT */}
           <div className="flex items-center gap-4 relative">
+
+            {/* 🔎 BUSCADOR GLOBAL */}
+            <SearchBar onProductSelect={openProductModal} />
 
             {/* NOTIFICATIONS */}
             <div className="relative">
@@ -181,7 +150,7 @@ const Navigation: React.FC = () => {
               </button>
 
               {notisAbiertas && (
-                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 z-50">
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border p-3 z-50">
                   <h4 className="font-semibold mb-2">Notificaciones</h4>
 
                   {notificaciones.length === 0 ? (
@@ -190,10 +159,8 @@ const Navigation: React.FC = () => {
                     <ul className="max-h-64 overflow-y-auto">
                       {notificaciones.map((n) => (
                         <li key={n.id} className="text-sm p-2 border-b border-gray-200">
-                          <strong>{n.titulo}</strong>
-                          <br />
-                          {n.mensaje}
-                          <br />
+                          <strong>{n.titulo}</strong><br />
+                          {n.mensaje}<br />
                           <span className="text-xs text-gray-500">
                             {new Date(n.created_at).toLocaleString()}
                           </span>
@@ -209,7 +176,7 @@ const Navigation: React.FC = () => {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800"
+                className="flex items-center gap-2 p-2 rounded-full bg-gray-100"
               >
                 <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center">
                   {user?.username?.[0]?.toUpperCase()}
@@ -217,7 +184,7 @@ const Navigation: React.FC = () => {
               </button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 p-2">
+                <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border p-2">
                   <p className="px-4 py-2 text-sm border-b">{user?.username}</p>
 
                   <button
@@ -241,25 +208,18 @@ const Navigation: React.FC = () => {
             </div>
 
           </div>
-
         </div>
       </header>
 
       {/* SIDEBAR */}
       {sidebarOpen && (
         <>
-          <div
-            className="fixed inset-0 bg-black/40 z-40"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setSidebarOpen(false)}></div>
 
-          <div className="fixed top-0 left-0 w-full max-w-xs sm:w-72 bg-white dark:bg-gray-900 h-full shadow-xl z-50 p-4 overflow-y-auto">
+          <div className="fixed top-0 left-0 w-full max-w-xs sm:w-72 bg-white h-full shadow-xl z-50 p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold">Menú</h2>
-              <button
-                className="text-gray-600 hover:text-red-600"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <button className="text-gray-600 hover:text-red-600" onClick={() => setSidebarOpen(false)}>
                 <Menu size={22} />
               </button>
             </div>
@@ -275,27 +235,18 @@ const Navigation: React.FC = () => {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-start gap-3 p-3 rounded-lg ${
-                      isActive
-                        ? "bg-red-50 border-l-4 border-red-500"
-                        : "hover:bg-gray-50"
+                      isActive ? "bg-red-50 border-l-4 border-red-500" : "hover:bg-gray-50"
                     }`}
                   >
-                    <Icon
-                      className={`h-5 w-5 mt-0.5 ${
-                        isActive ? "text-red-600" : "text-gray-500"
-                      }`}
-                    />
+                    <Icon className={`h-5 w-5 mt-0.5 ${isActive ? "text-red-600" : "text-gray-500"}`} />
                     <div>
                       <div className="text-sm font-medium">{item.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {item.description}
-                      </div>
+                      <div className="text-xs text-gray-500">{item.description}</div>
                     </div>
                   </Link>
                 );
               })}
             </nav>
-
           </div>
         </>
       )}
