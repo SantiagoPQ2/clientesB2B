@@ -1,33 +1,31 @@
+// src/context/ProductModalContext.tsx
 import { createContext, useContext, useState } from "react";
 
-const ProductModalContext = createContext<any>(null);
+const ProductModalContext = createContext(null);
 
 export const ProductModalProvider = ({ children }) => {
-  const [producto, setProducto] = useState(null);
-  const [categoriaObjetivo, setCategoriaObjetivo] = useState<string | null>(null);
-  const [productoObjetivo, setProductoObjetivo] = useState<any>(null);
+  const [categoriaObjetivo, setCategoriaObjetivo] = useState(null);
+  const [productoObjetivo, setProductoObjetivo] = useState(null);
 
-  const openProductModal = (prod) => setProducto(prod);
-  const closeProductModal = () => setProducto(null);
+  // Función para abrir producto desde el buscador
+  const openProductFromSearch = (producto) => {
+    setCategoriaObjetivo(producto.categoria);
+    setProductoObjetivo(producto);
+  };
 
-  // Nueva función: abrir producto desde el buscador
-  const openProductFromSearch = (prod) => {
-    setCategoriaObjetivo(prod.categoria);
-    setProductoObjetivo(prod);
+  // Función para limpiar valores al finalizar
+  const clearTargets = () => {
+    setCategoriaObjetivo(null);
+    setProductoObjetivo(null);
   };
 
   return (
-    <ProductModalContext.Provider
-      value={{
-        producto,
-        openProductModal,
-        closeProductModal,
-        categoriaObjetivo,
-        setCategoriaObjetivo,
-        productoObjetivo,
-        setProductoObjetivo
-      }}
-    >
+    <ProductModalContext.Provider value={{
+      categoriaObjetivo,
+      productoObjetivo,
+      openProductFromSearch,
+      clearTargets,
+    }}>
       {children}
     </ProductModalContext.Provider>
   );
