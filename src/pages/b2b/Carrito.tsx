@@ -7,11 +7,13 @@ interface Producto {
   articulo: string;
   nombre: string;
   marca: string;
-  categoria: string;   // ⭐ Si está vacía → es promo
+  categoria: string;   // Vacía = PROMO, con valor = ARTÍCULO
   precio: number;
   stock: number;
   imagen_url?: string;
 }
+
+const MINIMO_COMPRA = 20000; // ⭐ Mínimo de compra
 
 const CarritoB2B: React.FC = () => {
   const [carrito, setCarrito] = useState<Record<string, number>>({});
@@ -39,7 +41,7 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Cargar productos
+          Cargar productos desde Supabase
   ====================================== */
   const cargarProductos = async () => {
     const ids = Object.keys(carrito);
@@ -54,18 +56,20 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          DESCUENTO SOLO A PRODUCTOS
-          categoria === "" → promo → NO descuento
+          DESCUENTO SOLO PARA ARTÍCULOS
   ====================================== */
   const precioConDescuento = (p: Producto) => {
-    if (!p.categoria || p.categoria.trim() === "") {
-      return p.precio;
-    }
-    return p.precio * 0.88; // 12% OFF
+    if (!p.categoria || p.categoria.trim() === "") return p.precio; // PROMO
+    return p.precio * 0.88; // ARTÍCULO → 12% OFF
+  };
+
+  const descuentoPorUnidad = (p: Producto) => {
+    if (!p.categoria || p.categoria.trim() === "") return 0;
+    return p.precio - precioConDescuento(p);
   };
 
   /* ======================================
-          Calcular totales
+          Totales
   ====================================== */
   const totalSinDescuento = productos.reduce((acc, p) => {
     const qty = carrito[p.id] || 0;
@@ -84,6 +88,8 @@ const CarritoB2B: React.FC = () => {
     (acc, v) => acc + (v || 0),
     0
   );
+
+  const cumpleMinimo = totalFinal >= MINIMO_COMPRA;
 
   /* ======================================
           Cambiar cantidad
@@ -104,7 +110,6 @@ const CarritoB2B: React.FC = () => {
   const fechaEntrega = () => {
     let fecha = new Date();
 
-    // Hora actual en Buenos Aires
     const ahoraArgentina = new Date().toLocaleString("en-US", {
       timeZone: "America/Argentina/Buenos_Aires",
     });
@@ -129,10 +134,12 @@ const CarritoB2B: React.FC = () => {
   ====================================== */
   const confirmarPedidoFinal = async () => {
     try {
+      if (!cumpleMinimo) return;
+
       const { data: pedido, error } = await supabase
         .from("z_pedidos")
         .insert({
-          cliente_id: "00000000-0000-0000-0000-000000000000", 
+          cliente_id: "00000000-0000-0000-0000-000000000000",
           created_by: "b2b-web",
           estado: "pendiente",
           total: totalFinal,
@@ -141,7 +148,7 @@ const CarritoB2B: React.FC = () => {
         .single();
 
       if (error) {
-        console.error("ERROR AL CREAR PEDIDO:", error);
+        console.error("ERROR CREANDO PEDIDO:", error);
         return;
       }
 
@@ -186,7 +193,9 @@ const CarritoB2B: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LISTA DE PRODUCTOS */}
+            {/* ======================================
+                    LISTA DE PRODUCTOS
+            ====================================== */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-100">
 
               <div className="border-b px-4 py-3 text-sm text-gray-500 flex justify-between">
@@ -197,6 +206,9 @@ const CarritoB2B: React.FC = () => {
               <div className="divide-y divide-gray-100">
                 {productos.map((p) => {
                   const qty = carrito[p.id] || 0;
+
+                  const totalArticulo = precioConDescuento(p) * qty;
+                  const totalDescuentoArticulo = descuentoPorUnidad(p) * qty;
 
                   return (
                     <div key={p.id} className="px-4 py-3 flex items-center gap-4">
@@ -210,9 +222,11 @@ const CarritoB2B: React.FC = () => {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between">
+
                           <div>
                             <p className="font-semibold">{p.nombre}</p>
 
+                            {/* Si es promo */}
                             {(!p.categoria || p.categoria.trim() === "") ? (
                               <p className="text-xs text-red-600 font-semibold">PROMO</p>
                             ) : (
@@ -220,11 +234,19 @@ const CarritoB2B: React.FC = () => {
                             )}
                           </div>
 
-                          <p className="font-semibold text-red-600">
-                            ${(precioConDescuento(p) * qty).toLocaleString("es-AR", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </p>
+                          <div className="text-right">
+                            <p className="font-semibold text-red-600">
+                              ${totalArticulo.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                            </p>
+
+                            {/* ⭐ Mostrar descuento por artículo */}
+                            {totalDescuentoArticulo > 0 && (
+                              <p className="text-xs text-green-600">
+                                - ${totalDescuentoArticulo.toLocaleString("es-AR")}
+                              </p>
+                            )}
+                          </div>
+
                         </div>
 
                         <div className="flex justify-between mt-3">
@@ -254,7 +276,9 @@ const CarritoB2B: React.FC = () => {
               </div>
             </div>
 
-            {/* RESUMEN DEL PEDIDO */}
+            {/* ======================================
+                    RESUMEN DEL PEDIDO
+            ====================================== */}
             <div className="bg-white rounded-xl shadow-md border p-5 flex flex-col gap-4 h-fit">
 
               <h3 className="text-base font-semibold">Resumen del pedido</h3>
@@ -266,13 +290,11 @@ const CarritoB2B: React.FC = () => {
 
               <div className="flex justify-between text-sm">
                 <span>Subtotal sin descuento</span>
-                <span className="font-semibold">
-                  ${totalSinDescuento.toLocaleString("es-AR")}
-                </span>
+                <span className="font-semibold">${totalSinDescuento.toLocaleString("es-AR")}</span>
               </div>
 
               <div className="flex justify-between text-sm text-green-700">
-                <span>Descuento aplicado</span>
+                <span>Descuento aplicado (12%)</span>
                 <span>- ${descuentoReal.toLocaleString("es-AR")}</span>
               </div>
 
@@ -283,14 +305,26 @@ const CarritoB2B: React.FC = () => {
                 </span>
               </div>
 
-              {/* ⭐ TEXTO NUEVO */}
+              {/* 💬 Texto informativo en el RESUMEN */}
               <p className="text-xs text-gray-600 -mt-2">
                 El pedido será abonado contra entrega acordada con el transportista.
               </p>
 
+              {/* ❗ Mensaje de mínimo de compra */}
+              {!cumpleMinimo && (
+                <p className="text-xs text-red-600">
+                  El monto mínimo de compra es ${MINIMO_COMPRA.toLocaleString("es-AR")}.
+                </p>
+              )}
+
               <button
-                onClick={() => setShowConfirmModal(true)}
-                className="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
+                disabled={!cumpleMinimo}
+                onClick={() => cumpleMinimo && setShowConfirmModal(true)}
+                className={`py-2 rounded-lg font-semibold text-white ${
+                  cumpleMinimo
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
               >
                 Confirmar pedido
               </button>
@@ -301,7 +335,9 @@ const CarritoB2B: React.FC = () => {
         )}
       </div>
 
-      {/* MODAL CONFIRMAR */}
+      {/* ======================================
+                MODAL CONFIRMAR
+      ====================================== */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md">
@@ -316,7 +352,13 @@ const CarritoB2B: React.FC = () => {
             </p>
 
             <p className="text-center text-gray-600 mt-2">
-              Entrega estimada: <span className="font-semibold">{fechaEntrega()}</span>
+              Entrega estimada:{" "}
+              <span className="font-semibold">{fechaEntrega()}</span>
+            </p>
+
+            {/* 💬 Texto añadido dentro del modal */}
+            <p className="text-xs text-gray-600 text-center mt-4">
+              El pedido será abonado contra entrega acordada con el transportista.
             </p>
 
             <div className="flex flex-col gap-3 mt-6">
@@ -339,7 +381,9 @@ const CarritoB2B: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL ÉXITO */}
+      {/* ======================================
+                MODAL ÉXITO
+      ====================================== */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-10 w-[90%] max-w-md text-center">
