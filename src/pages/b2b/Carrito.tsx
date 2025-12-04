@@ -22,7 +22,7 @@ const CarritoB2B: React.FC = () => {
   const navigate = useNavigate();
 
   /* ======================================
-          Cargar carrito localStorage
+          Cargar carrito desde localStorage
   ====================================== */
   useEffect(() => {
     const data = localStorage.getItem("carrito_b2b");
@@ -39,7 +39,7 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Cargar productos desde Supabase
+          Cargar productos
   ====================================== */
   const cargarProductos = async () => {
     const ids = Object.keys(carrito);
@@ -55,37 +55,29 @@ const CarritoB2B: React.FC = () => {
 
   /* ======================================
           DESCUENTO SOLO A PRODUCTOS
-          categoria === "" → PROMO → NO DESC
+          categoria === "" → promo → NO descuento
   ====================================== */
   const precioConDescuento = (p: Producto) => {
-    // ⭐ Si categoria está vacía: PROMO → sin descuento
     if (!p.categoria || p.categoria.trim() === "") {
       return p.precio;
     }
-
-    // ⭐ Si categoria tiene valor → ARTÍCULO → aplica 12%
-    return p.precio * 0.88;
+    return p.precio * 0.88; // 12% OFF
   };
 
   /* ======================================
           Calcular totales
   ====================================== */
-
-  // Total sin descuentos (solo referencia)
   const totalSinDescuento = productos.reduce((acc, p) => {
     const qty = carrito[p.id] || 0;
     return acc + p.precio * qty;
   }, 0);
 
-  // Total con descuento aplicado correctamente
   const totalConDescuento = productos.reduce((acc, p) => {
     const qty = carrito[p.id] || 0;
     return acc + precioConDescuento(p) * qty;
   }, 0);
 
-  // Descuento real aplicado (solo artículos)
   const descuentoReal = totalSinDescuento - totalConDescuento;
-
   const totalFinal = totalConDescuento;
 
   const totalItems = Object.values(carrito).reduce(
@@ -107,15 +99,24 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Fecha de entrega
+          Fecha de entrega con regla 15:00
   ====================================== */
   const fechaEntrega = () => {
     let fecha = new Date();
-    let dias = 0;
-    while (dias < 2) {
+
+    // Hora actual en Buenos Aires
+    const ahoraArgentina = new Date().toLocaleString("en-US", {
+      timeZone: "America/Argentina/Buenos_Aires",
+    });
+
+    const now = new Date(ahoraArgentina);
+    let diasHabiles = now.getHours() >= 15 ? 3 : 2;
+
+    while (diasHabiles > 0) {
       fecha.setDate(fecha.getDate() + 1);
-      if (![0, 6].includes(fecha.getDay())) dias++;
+      if (![0, 6].includes(fecha.getDay())) diasHabiles--;
     }
+
     return fecha.toLocaleDateString("es-AR", {
       weekday: "long",
       day: "numeric",
@@ -131,10 +132,10 @@ const CarritoB2B: React.FC = () => {
       const { data: pedido, error } = await supabase
         .from("z_pedidos")
         .insert({
-          cliente_id: "00000000-0000-0000-0000-000000000000", // cambiar por el real
+          cliente_id: "00000000-0000-0000-0000-000000000000", 
           created_by: "b2b-web",
           estado: "pendiente",
-          total: totalFinal, // ⭐ total ya tiene descuento aplicado correctamente
+          total: totalFinal,
         })
         .select()
         .single();
@@ -146,7 +147,6 @@ const CarritoB2B: React.FC = () => {
 
       setPedidoID(pedido.id);
 
-      // Guardar ítems del pedido
       for (const p of productos) {
         const qty = carrito[p.id] || 0;
         if (qty <= 0) continue;
@@ -157,15 +157,11 @@ const CarritoB2B: React.FC = () => {
           articulo: p.articulo,
           nombre: p.nombre,
           cantidad: qty,
-
-          // ⭐ Guardar precio unitario ya con descuento si corresponde
           precio_unitario: precioConDescuento(p),
-
           subtotal: precioConDescuento(p) * qty,
         });
       }
 
-      // Limpiar carrito
       localStorage.removeItem("carrito_b2b");
       setCarrito({});
 
@@ -217,7 +213,6 @@ const CarritoB2B: React.FC = () => {
                           <div>
                             <p className="font-semibold">{p.nombre}</p>
 
-                            {/* Mostrar si es promo */}
                             {(!p.categoria || p.categoria.trim() === "") ? (
                               <p className="text-xs text-red-600 font-semibold">PROMO</p>
                             ) : (
@@ -225,7 +220,6 @@ const CarritoB2B: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Precio total del ítem con descuento si aplica */}
                           <p className="font-semibold text-red-600">
                             ${(precioConDescuento(p) * qty).toLocaleString("es-AR", {
                               minimumFractionDigits: 2,
@@ -260,7 +254,7 @@ const CarritoB2B: React.FC = () => {
               </div>
             </div>
 
-            {/* RESUMEN */}
+            {/* RESUMEN DEL PEDIDO */}
             <div className="bg-white rounded-xl shadow-md border p-5 flex flex-col gap-4 h-fit">
 
               <h3 className="text-base font-semibold">Resumen del pedido</h3>
@@ -288,6 +282,11 @@ const CarritoB2B: React.FC = () => {
                   ${totalFinal.toLocaleString("es-AR")}
                 </span>
               </div>
+
+              {/* ⭐ TEXTO NUEVO */}
+              <p className="text-xs text-gray-600 -mt-2">
+                El pedido será abonado contra entrega acordada con el transportista.
+              </p>
 
               <button
                 onClick={() => setShowConfirmModal(true)}
