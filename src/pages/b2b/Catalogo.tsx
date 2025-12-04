@@ -3,6 +3,9 @@ import { supabase } from "../../config/supabase";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
 import ProductoModal from "../../components/ProductoModal";
 
+// 🔥 Importante: escuchar target desde SearchBar
+import { useProductModal } from "../../context/ProductModalContext";
+
 interface Producto {
   id: string;
   articulo: string;
@@ -23,8 +26,15 @@ const CatalogoB2B: React.FC = () => {
   const [btnAnimacion, setBtnAnimacion] = useState<Record<string, boolean>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string>("");
 
-  // Modal
+  // Modal local del catálogo
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
+
+  // 🔥 Importante
+  const {
+    categoriaObjetivo,
+    productoObjetivo,
+    clearTargets
+  } = useProductModal();
 
   useEffect(() => {
     cargarProductos();
@@ -62,6 +72,29 @@ const CatalogoB2B: React.FC = () => {
     setProductos(sinCombos);
   };
 
+  // ============================
+  // AUTO-SELECCIONAR CATEGORÍA Y ABRIR PRODUCTO (desde SearchBar)
+  // ============================
+  useEffect(() => {
+    if (!categoriaObjetivo) return;
+
+    // 1️⃣ Seleccionamos categoría automáticamente
+    setCategoriaActiva(categoriaObjetivo);
+
+    // 2️⃣ Esperar a que los productos de esta categoría se carguen
+    const timer = setTimeout(() => {
+      if (productoObjetivo) {
+        setProductoSeleccionado(productoObjetivo);
+        clearTargets(); // limpiar para evitar doble apertura
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [categoriaObjetivo, productoObjetivo]);
+
+  // ============================
+  // CATEGORÍAS
+  // ============================
   const categorias = Array.from(
     new Set(productos.map((p) => p.categoria).filter(Boolean))
   );
@@ -186,7 +219,7 @@ const CatalogoB2B: React.FC = () => {
                             key={p.id}
                             className="bg-white rounded-xl shadow-md border border-gray-100 
                                        flex flex-col overflow-hidden hover:shadow-lg transition cursor-pointer"
-                            onClick={() => setProductoSeleccionado(p)} // ABRE MODAL
+                            onClick={() => setProductoSeleccionado(p)}
                           >
 
                             {/* Imagen */}
@@ -233,10 +266,10 @@ const CatalogoB2B: React.FC = () => {
                                   </p>
                                 </div>
 
-                                {/* Botón AGREGAR — NO ABRE MODAL */}
+                                {/* Botón AGREGAR */}
                                 <button
                                   onClick={(e) => {
-                                    e.stopPropagation(); // evita abrir modal
+                                    e.stopPropagation();
                                     const nuevo = { ...carrito, [p.id]: qty + 1 };
                                     guardarCarrito(nuevo);
                                   }}
@@ -264,7 +297,6 @@ const CatalogoB2B: React.FC = () => {
               secondaryPath="/"
             />
           </div>
-
         </div>
       </div>
 
