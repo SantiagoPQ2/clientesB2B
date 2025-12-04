@@ -11,43 +11,28 @@ interface Producto {
   imagen_url?: string;
 }
 
-interface Props {
-  onProductSelect?: (producto: Producto) => void;
-}
-
-const SearchBar: React.FC<Props> = ({ onProductSelect }) => {
+const SearchBar = ({ onProductSelect }) => {
   const [query, setQuery] = useState("");
-  const [resultados, setResultados] = useState<any[]>([]);
+  const [resultados, setResultados] = useState([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const navigate = useNavigate();
 
-  /* ===============================
-        Cargar todos los productos
-  =============================== */
   useEffect(() => {
-    const cargar = async () => {
-      const { data } = await supabase.from("z_productos").select("*");
+    supabase.from("z_productos").select("*").then(({ data }) => {
       setProductos(data || []);
-    };
-    cargar();
+    });
   }, []);
 
-  /* ===============================
-        Filtrar resultados
-  =============================== */
   useEffect(() => {
-    if (!query.trim()) {
-      setResultados([]);
-      return;
-    }
+    if (!query.trim()) return setResultados([]);
 
-    let q = query.toLowerCase();
+    const q = query.toLowerCase();
 
     const rutas = [
-      { icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
-      { icon: "📦", nombre: "Mis pedidos", ruta: "/b2b/pedidos" },
-      { icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" },
-    ].filter((r) => r.nombre.toLowerCase().includes(q));
+      { type: "route", icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
+      { type: "route", icon: "📦", nombre: "Pedidos", ruta: "/b2b/pedidos" },
+      { type: "route", icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" }
+    ].filter((i) => i.nombre.toLowerCase().includes(q));
 
     const prods = productos.filter(
       (p) =>
@@ -59,21 +44,12 @@ const SearchBar: React.FC<Props> = ({ onProductSelect }) => {
     setResultados([...rutas, ...prods]);
   }, [query, productos]);
 
-  /* ===============================
-        Manejar selección
-  =============================== */
-  const handleSelect = (item: any) => {
+  const seleccionar = (item) => {
     setQuery("");
     setResultados([]);
 
-    if (item.ruta) {
-      navigate(item.ruta);
-      return;
-    }
-
-    if (onProductSelect) {
-      onProductSelect(item);
-    }
+    if (item.ruta) return navigate(item.ruta);
+    onProductSelect(item);
   };
 
   return (
@@ -83,23 +59,23 @@ const SearchBar: React.FC<Props> = ({ onProductSelect }) => {
         <FiSearch className="text-gray-600 mr-2" size={18} />
         <input
           type="text"
-          placeholder="Buscar productos o secciones..."
+          placeholder="Buscar..."
           className="outline-none w-60 text-sm"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
 
-      {/* RESULTADOS */}
+      {/* LISTA */}
       {resultados.length > 0 && (
         <div className="absolute top-12 left-0 w-80 bg-white shadow-xl rounded-lg border z-50 max-h-80 overflow-auto">
           {resultados.map((item, i) => (
             <div
               key={i}
-              onClick={() => handleSelect(item)}
+              onClick={() => seleccionar(item)}
               className="p-3 flex items-center gap-3 hover:bg-gray-100 cursor-pointer"
             >
-              {item.ruta ? (
+              {"ruta" in item ? (
                 <span className="text-xl">{item.icon}</span>
               ) : (
                 <img
@@ -110,7 +86,7 @@ const SearchBar: React.FC<Props> = ({ onProductSelect }) => {
 
               <div>
                 <p className="font-semibold text-sm">{item.nombre}</p>
-                {item.categoria && (
+                {"categoria" in item && (
                   <p className="text-xs text-gray-500">{item.categoria}</p>
                 )}
               </div>
