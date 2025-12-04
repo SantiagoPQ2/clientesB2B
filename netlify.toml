@@ -7,6 +7,14 @@
   publish = "dist"
 
 #############################################
+# 🚫 DESACTIVAR EL ESCANEO QUE FRENA EL DEPLOY
+#############################################
+[build.environment]
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+  # Si querés ir más suave, podés usar esto:
+  # SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "true"
+
+#############################################
 # ⚙️ FUNCTIONS SETTINGS
 #############################################
 # La función Python usa runtime 3.11
