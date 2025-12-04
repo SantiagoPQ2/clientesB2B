@@ -45,10 +45,12 @@ const CarritoB2B: React.FC = () => {
     const ids = Object.keys(carrito);
     if (ids.length === 0) return setProductos([]);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("z_productos")
       .select("*")
       .in("id", ids);
+
+    if (error) console.error(error);
 
     setProductos((data as Producto[]) || []);
   };
@@ -100,57 +102,79 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ============================
-        CREAR PEDIDO
+        CREAR PEDIDO (FIX REAL)
   ============================ */
   const confirmarPedidoFinal = async () => {
     try {
-      const { data: pedido, error } = await supabase
+      // 1) Traer usuario logueado
+      const { data: session, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !session?.user) {
+        alert("Debes iniciar sesión.");
+        return;
+      }
+
+      const user = session.user;
+
+      // 2) Crear pedido en z_pedidos
+      const { data: pedido, error: pedidoError } = await supabase
         .from("z_pedidos")
         .insert({
-          cliente_id: "cliente_demo", // <-- reemplazar si usás auth
+          cliente_id: user.id, // UUID real del usuario
           estado: "pendiente",
-          fecha_creacion: new Date().toISOString(),
-          subtotal: subtotal,
-          descuento: descuento,
-          total: totalConDescuento,
+          total: totalConDescuento, // único campo numérico permitido
         })
-        .select()
+        .select("id")
         .single();
 
-      if (error || !pedido) {
-        console.error(error);
+      if (pedidoError || !pedido) {
+        console.error("Error creando pedido:", pedidoError);
+        alert("Error al confirmar el pedido.");
         setShowConfirmModal(false);
         return;
       }
 
-      setPedidoID(pedido.id);
+      const pedidoId = pedido.id;
+      setPedidoID(pedidoId);
 
-      // Guardar items
-      for (const p of productos) {
-        const qty = carrito[p.id] || 0;
-        if (qty <= 0) continue;
+      // 3) Guardar items
+      const items = productos
+        .map((p) => {
+          const qty = carrito[p.id] || 0;
+          if (qty <= 0) return null;
 
-        await supabase.from("z_pedido_items").insert({
-          pedido_id: pedido.id,
-          producto_id: p.id,
-          articulo: p.articulo,
-          nombre: p.nombre,
-          cantidad: qty,
-          precio_unitario: p.precio,
-          subtotal: p.precio * qty,
-        });
+          return {
+            pedido_id: pedidoId,
+            producto_id: p.id,
+            articulo: p.articulo,
+            nombre: p.nombre,
+            cantidad: qty,
+            precio_unitario: p.precio,
+            subtotal: p.precio * qty,
+          };
+        })
+        .filter(Boolean);
+
+      const { error: itemsError } = await supabase
+        .from("z_pedido_items")
+        .insert(items);
+
+      if (itemsError) {
+        console.error("Error guardando items:", itemsError);
+        alert("Error al guardar los productos del pedido");
+        return;
       }
 
-      // Limpiar carrito
+      // 4) Limpiar carrito
       localStorage.removeItem("carrito_b2b");
       setCarrito({});
 
-      // Mostrar modal estético de éxito
+      // 5) Mostrar modal de éxito
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-
     } catch (err) {
       console.error("Error inesperado:", err);
+      alert("Error inesperado al confirmar pedido");
     }
   };
 
@@ -263,9 +287,7 @@ const CarritoB2B: React.FC = () => {
         )}
       </div>
 
-      {/* ============================
-          MODAL CONFIRMAR PEDIDO
-      ============================ */}
+      {/* MODAL CONFIRMAR */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md">
@@ -307,9 +329,7 @@ const CarritoB2B: React.FC = () => {
         </div>
       )}
 
-      {/* ============================
-          MODAL SUCCESS
-      ============================ */}
+      {/* MODAL SUCCESS */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
           <div className="bg-white rounded-xl shadow-xl p-10 w-[90%] max-w-md text-center">
