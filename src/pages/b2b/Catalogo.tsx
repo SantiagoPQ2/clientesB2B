@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
 import ProductoModal from "../../components/ProductoModal";
-
-// 🔥 Importante: escuchar target desde SearchBar
 import { useProductModal } from "../../context/ProductModalContext";
 
 interface Producto {
@@ -23,19 +21,17 @@ const CatalogoB2B: React.FC = () => {
   const [filtroMarca, setFiltroMarca] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [carrito, setCarrito] = useState<Record<string, number>>({});
-  const [btnAnimacion, setBtnAnimacion] = useState<Record<string, boolean>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string>("");
 
-  // Modal local del catálogo
+  // Modal local
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
 
-  // 🔥 Importante
-  const {
-    categoriaObjetivo,
-    productoObjetivo,
-    clearTargets
-  } = useProductModal();
+  // SearchBar → objetivos
+  const { categoriaObjetivo, productoObjetivo, clearTargets } = useProductModal();
 
+  // ============================
+  // Cargar catálogo
+  // ============================
   useEffect(() => {
     cargarProductos();
     cargarCarrito();
@@ -57,14 +53,11 @@ const CatalogoB2B: React.FC = () => {
       .select("*")
       .eq("activo", true);
 
-    if (error) {
-      console.error("Error cargando productos:", error);
-      return;
-    }
+    if (error) return console.error(error);
 
     const all = (data as Producto[]) || [];
 
-    const sinCombos = all.filter((p) => {
+    const sinCombos = all.filter(p => {
       if (!p.combo) return true;
       return !String(p.combo).toLowerCase().includes("combo");
     });
@@ -73,27 +66,33 @@ const CatalogoB2B: React.FC = () => {
   };
 
   // ============================
-  // AUTO-SELECCIONAR CATEGORÍA Y ABRIR PRODUCTO (desde SearchBar)
+  // AUTO ABRIR PRODUCTO DESDE SEARCHBAR
   // ============================
   useEffect(() => {
-    if (!categoriaObjetivo) return;
+    if (!categoriaObjetivo || !productoObjetivo) return;
 
-    // 1️⃣ Seleccionamos categoría automáticamente
+    // 1️⃣ Seleccionar la categoría
     setCategoriaActiva(categoriaObjetivo);
 
-    // 2️⃣ Esperar a que los productos de esta categoría se carguen
-    const timer = setTimeout(() => {
-      if (productoObjetivo) {
+    const timeout = setTimeout(() => {
+      // Validar que el producto tiene todo lo necesario
+      if (
+        productoObjetivo &&
+        productoObjetivo.id &&
+        productoObjetivo.nombre &&
+        typeof productoObjetivo.precio === "number"
+      ) {
         setProductoSeleccionado(productoObjetivo);
-        clearTargets(); // limpiar para evitar doble apertura
       }
-    }, 400);
 
-    return () => clearTimeout(timer);
+      clearTargets();
+    }, 350);
+
+    return () => clearTimeout(timeout);
   }, [categoriaObjetivo, productoObjetivo]);
 
   // ============================
-  // CATEGORÍAS
+  // CATEGORÍAS Y FILTROS
   // ============================
   const categorias = Array.from(
     new Set(productos.map((p) => p.categoria).filter(Boolean))
@@ -122,15 +121,16 @@ const CatalogoB2B: React.FC = () => {
           );
         });
 
+  // ============================
+  // UI RENDER
+  // ============================
   return (
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
 
-          {/* ========================= PANEL PRINCIPAL ========================= */}
+          {/* ========================= CATEGORÍAS ========================= */}
           <div className="lg:col-span-3">
-
-            {/* ========================= CATEGORÍAS ========================= */}
             {categoriaActiva === "" && (
               <div>
                 <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-2">
@@ -153,10 +153,8 @@ const CatalogoB2B: React.FC = () => {
             {categoriaActiva !== "" && (
               <div className="flex flex-col gap-6">
 
-                {/* ========================= FILTROS ========================= */}
+                {/* FILTROS */}
                 <div className="bg-white w-full shadow-md rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-end gap-4">
-
-                  {/* Buscar */}
                   <div className="flex-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase">
                       Buscar
@@ -190,7 +188,6 @@ const CatalogoB2B: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Volver a categorías */}
                   <button
                     onClick={() => {
                       setCategoriaActiva("");
@@ -203,7 +200,7 @@ const CatalogoB2B: React.FC = () => {
                   </button>
                 </div>
 
-                {/* ========================= GRID PRODUCTOS ========================= */}
+                {/* GRID */}
                 <div>
                   {filtrados.length === 0 ? (
                     <div className="text-center text-gray-500 text-sm py-8 bg-white rounded-xl shadow-sm">
@@ -266,7 +263,7 @@ const CatalogoB2B: React.FC = () => {
                                   </p>
                                 </div>
 
-                                {/* Botón AGREGAR */}
+                                {/* Agregar */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -300,7 +297,7 @@ const CatalogoB2B: React.FC = () => {
         </div>
       </div>
 
-      {/* ========================= MODAL DE PRODUCTO ========================= */}
+      {/* ========================= MODAL ========================= */}
       {productoSeleccionado && (
         <ProductoModal
           producto={productoSeleccionado}
