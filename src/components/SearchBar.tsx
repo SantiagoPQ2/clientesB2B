@@ -3,29 +3,23 @@ import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabase";
 
-interface Producto {
-  id: string;
-  nombre: string | null;
-  categoria: string | null;
-  articulo: string | null;
-  imagen_url?: string;
-}
-
 const SearchBar = ({ onProductSelect }) => {
-  const [open, setOpen] = useState(false);        // mostrar/ocultar barra
-  const [query, setQuery] = useState("");         // texto
-  const [resultados, setResultados] = useState<any[]>([]);
-  const [productos, setProductos] = useState<Producto[]>([]);
-
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [productos, setProductos] = useState([]);
   const navigate = useNavigate();
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef(null);
 
-  // ============================
-  // Cerrar al hacer click afuera
-  // ============================
   useEffect(() => {
-    const listener = (e: MouseEvent) => {
-      if (!ref.current || ref.current.contains(e.target as Node)) return;
+    supabase.from("z_productos").select("*").then(({ data }) => {
+      setProductos(data || []);
+    });
+  }, []);
+
+  useEffect(() => {
+    const listener = (e) => {
+      if (!ref.current || ref.current.contains(e.target)) return;
       setOpen(false);
       setQuery("");
       setResultados([]);
@@ -34,18 +28,6 @@ const SearchBar = ({ onProductSelect }) => {
     return () => document.removeEventListener("mousedown", listener);
   }, []);
 
-  // ============================
-  // Cargar productos
-  // ============================
-  useEffect(() => {
-    supabase.from("z_productos").select("*").then(({ data }) => {
-      setProductos(data || []);
-    });
-  }, []);
-
-  // ============================
-  // Filtrar
-  // ============================
   useEffect(() => {
     if (!query.trim()) return setResultados([]);
 
@@ -55,34 +37,45 @@ const SearchBar = ({ onProductSelect }) => {
       { icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
       { icon: "📦", nombre: "Pedidos", ruta: "/b2b/pedidos" },
       { icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" }
-    ].filter((r) => r.nombre.toLowerCase().includes(q));
+    ].filter((i) => i.nombre.toLowerCase().includes(q));
 
     const prods = productos.filter((p) => {
       const n = p.nombre?.toLowerCase() || "";
       const a = p.articulo?.toLowerCase() || "";
       const c = p.categoria?.toLowerCase() || "";
-
       return n.includes(q) || a.includes(q) || c.includes(q);
     });
 
     setResultados([...rutas, ...prods]);
   }, [query, productos]);
 
-  // ============================
-  // Selección
-  // ============================
-  const seleccionar = (item: any) => {
+  const seleccionar = async (item) => {
+    // Cerrar barra
     setQuery("");
     setResultados([]);
     setOpen(false);
 
+    // 1️⃣ Es una ruta → navegar normalmente
     if (item.ruta) return navigate(item.ruta);
-    onProductSelect(item);
+
+    // 2️⃣ Es un producto → navegar al catálogo y abrir modal
+    navigate("/b2b/catalogo");
+
+    // Necesitamos esperar a que el catálogo se monte
+    setTimeout(() => {
+      onProductSelect({
+        id: item.id,
+        nombre: item.nombre,
+        categoria: item.categoria,
+        articulo: item.articulo,
+        imagen_url: item.imagen_url,
+        precio: item.precio
+      });
+    }, 200); // 200ms = tiempo perfecto para React
   };
 
   return (
     <div className="relative" ref={ref}>
-      {/* ICONO DE LUPA */}
       <button
         onClick={() => setOpen(!open)}
         className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -90,9 +83,8 @@ const SearchBar = ({ onProductSelect }) => {
         <Search size={20} className="text-gray-700" />
       </button>
 
-      {/* INPUT DESPLEGABLE */}
       {open && (
-        <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border p-3 w-72 z-50 animate-fadeIn">
+        <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border p-3 w-72 z-50">
           <input
             type="text"
             placeholder="Buscar..."
@@ -102,7 +94,6 @@ const SearchBar = ({ onProductSelect }) => {
             onChange={(e) => setQuery(e.target.value)}
           />
 
-          {/* RESULTADOS */}
           {resultados.length > 0 && (
             <div className="mt-2 max-h-80 overflow-auto divide-y">
               {resultados.map((item, i) => (
@@ -122,7 +113,7 @@ const SearchBar = ({ onProductSelect }) => {
 
                   <div>
                     <p className="font-medium text-sm">{item.nombre}</p>
-                    {item.categoria && (
+                    {"categoria" in item && (
                       <p className="text-xs text-gray-500">{item.categoria}</p>
                     )}
                   </div>
@@ -131,7 +122,6 @@ const SearchBar = ({ onProductSelect }) => {
             </div>
           )}
 
-          {/* SIN RESULTADOS */}
           {query.length > 0 && resultados.length === 0 && (
             <p className="text-sm text-gray-500 mt-2">No se encontraron resultados</p>
           )}
