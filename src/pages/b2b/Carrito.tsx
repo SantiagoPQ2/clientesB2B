@@ -7,7 +7,7 @@ interface Producto {
   articulo: string;
   nombre: string;
   marca: string;
-  categoria: string;
+  categoria: string;   // ⭐ Si está vacía → es promo
   precio: number;
   stock: number;
   imagen_url?: string;
@@ -39,7 +39,7 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Cargar productos
+          Cargar productos desde Supabase
   ====================================== */
   const cargarProductos = async () => {
     const ids = Object.keys(carrito);
@@ -54,15 +54,39 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Totales
+          DESCUENTO SOLO A PRODUCTOS
+          categoria === "" → PROMO → NO DESC
   ====================================== */
-  const subtotal = productos.reduce(
-    (acc, p) => acc + p.precio * (carrito[p.id] || 0),
-    0
-  );
+  const precioConDescuento = (p: Producto) => {
+    // ⭐ Si categoria está vacía: PROMO → sin descuento
+    if (!p.categoria || p.categoria.trim() === "") {
+      return p.precio;
+    }
 
-  const descuento = subtotal * 0.12;
-  const totalConDescuento = subtotal - descuento;
+    // ⭐ Si categoria tiene valor → ARTÍCULO → aplica 12%
+    return p.precio * 0.88;
+  };
+
+  /* ======================================
+          Calcular totales
+  ====================================== */
+
+  // Total sin descuentos (solo referencia)
+  const totalSinDescuento = productos.reduce((acc, p) => {
+    const qty = carrito[p.id] || 0;
+    return acc + p.precio * qty;
+  }, 0);
+
+  // Total con descuento aplicado correctamente
+  const totalConDescuento = productos.reduce((acc, p) => {
+    const qty = carrito[p.id] || 0;
+    return acc + precioConDescuento(p) * qty;
+  }, 0);
+
+  // Descuento real aplicado (solo artículos)
+  const descuentoReal = totalSinDescuento - totalConDescuento;
+
+  const totalFinal = totalConDescuento;
 
   const totalItems = Object.values(carrito).reduce(
     (acc, v) => acc + (v || 0),
@@ -83,7 +107,7 @@ const CarritoB2B: React.FC = () => {
   };
 
   /* ======================================
-          Fecha entrega
+          Fecha de entrega
   ====================================== */
   const fechaEntrega = () => {
     let fecha = new Date();
@@ -107,10 +131,10 @@ const CarritoB2B: React.FC = () => {
       const { data: pedido, error } = await supabase
         .from("z_pedidos")
         .insert({
-          cliente_id: "00000000-0000-0000-0000-000000000000", // <-- colocar el cliente real
+          cliente_id: "00000000-0000-0000-0000-000000000000", // cambiar por el real
           created_by: "b2b-web",
           estado: "pendiente",
-          total: totalConDescuento
+          total: totalFinal, // ⭐ total ya tiene descuento aplicado correctamente
         })
         .select()
         .single();
@@ -122,7 +146,7 @@ const CarritoB2B: React.FC = () => {
 
       setPedidoID(pedido.id);
 
-      // Guardar ítems
+      // Guardar ítems del pedido
       for (const p of productos) {
         const qty = carrito[p.id] || 0;
         if (qty <= 0) continue;
@@ -133,8 +157,11 @@ const CarritoB2B: React.FC = () => {
           articulo: p.articulo,
           nombre: p.nombre,
           cantidad: qty,
-          precio_unitario: p.precio,
-          subtotal: p.precio * qty,
+
+          // ⭐ Guardar precio unitario ya con descuento si corresponde
+          precio_unitario: precioConDescuento(p),
+
+          subtotal: precioConDescuento(p) * qty,
         });
       }
 
@@ -142,17 +169,15 @@ const CarritoB2B: React.FC = () => {
       localStorage.removeItem("carrito_b2b");
       setCarrito({});
 
-      // Mostrar modal de éxito
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-
     } catch (err) {
       console.error("ERROR INESPERADO:", err);
     }
   };
 
   /* ======================================
-          UI PRINCIPAL
+          UI
   ====================================== */
   return (
     <div className="w-full">
@@ -165,14 +190,12 @@ const CarritoB2B: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* ------------------------------
-                    LISTA DE PRODUCTOS
-            ------------------------------ */}
+            {/* LISTA DE PRODUCTOS */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-100">
 
               <div className="border-b px-4 py-3 text-sm text-gray-500 flex justify-between">
                 <span>Productos ({totalItems})</span>
-                <span>Subtotal</span>
+                <span>Total</span>
               </div>
 
               <div className="divide-y divide-gray-100">
@@ -193,11 +216,20 @@ const CarritoB2B: React.FC = () => {
                         <div className="flex justify-between">
                           <div>
                             <p className="font-semibold">{p.nombre}</p>
-                            <p className="text-xs text-gray-500">{p.marca} • {p.categoria}</p>
+
+                            {/* Mostrar si es promo */}
+                            {(!p.categoria || p.categoria.trim() === "") ? (
+                              <p className="text-xs text-red-600 font-semibold">PROMO</p>
+                            ) : (
+                              <p className="text-xs text-gray-500">{p.marca} • {p.categoria}</p>
+                            )}
                           </div>
 
+                          {/* Precio total del ítem con descuento si aplica */}
                           <p className="font-semibold text-red-600">
-                            ${(p.precio * qty).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                            ${(precioConDescuento(p) * qty).toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                            })}
                           </p>
                         </div>
 
@@ -228,32 +260,32 @@ const CarritoB2B: React.FC = () => {
               </div>
             </div>
 
-            {/* ------------------------------
-                    RESUMEN
-            ------------------------------ */}
+            {/* RESUMEN */}
             <div className="bg-white rounded-xl shadow-md border p-5 flex flex-col gap-4 h-fit">
 
               <h3 className="text-base font-semibold">Resumen del pedido</h3>
 
               <div className="flex justify-between text-sm">
-                <span>Productos</span>
-                <span className="font-semibold">{totalItems} ítems</span>
+                <span>Items</span>
+                <span className="font-semibold">{totalItems}</span>
               </div>
 
               <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span className="font-semibold">${subtotal.toLocaleString("es-AR")}</span>
+                <span>Subtotal sin descuento</span>
+                <span className="font-semibold">
+                  ${totalSinDescuento.toLocaleString("es-AR")}
+                </span>
               </div>
 
               <div className="flex justify-between text-sm text-green-700">
-                <span>Descuento 12%</span>
-                <span>- ${descuento.toLocaleString("es-AR")}</span>
+                <span>Descuento aplicado</span>
+                <span>- ${descuentoReal.toLocaleString("es-AR")}</span>
               </div>
 
               <div className="border-t pt-3 flex justify-between">
                 <span className="font-semibold">Total final</span>
                 <span className="text-xl font-bold text-red-600">
-                  ${totalConDescuento.toLocaleString("es-AR")}
+                  ${totalFinal.toLocaleString("es-AR")}
                 </span>
               </div>
 
@@ -270,9 +302,7 @@ const CarritoB2B: React.FC = () => {
         )}
       </div>
 
-      {/* ======================================
-            MODAL CONFIRMAR
-      ====================================== */}
+      {/* MODAL CONFIRMAR */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md">
@@ -282,7 +312,7 @@ const CarritoB2B: React.FC = () => {
             <p className="text-center mt-3 text-gray-600">
               Total final:{" "}
               <span className="font-bold text-red-600">
-                ${totalConDescuento.toLocaleString("es-AR")}
+                ${totalFinal.toLocaleString("es-AR")}
               </span>
             </p>
 
@@ -310,9 +340,7 @@ const CarritoB2B: React.FC = () => {
         </div>
       )}
 
-      {/* ======================================
-            MODAL ÉXITO
-      ====================================== */}
+      {/* MODAL ÉXITO */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-10 w-[90%] max-w-md text-center">
