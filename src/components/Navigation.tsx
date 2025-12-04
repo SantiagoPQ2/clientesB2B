@@ -11,7 +11,7 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 import { useLocation, Link } from "react-router-dom";
-import SearchBar from "./SearchBar"; // ⭐ NUEVO BUSCADOR CENTRAL
+import SearchBar from "./SearchBar";
 
 const Navigation: React.FC = () => {
   const { user } = useAuth();
@@ -21,15 +21,10 @@ const Navigation: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // ============================
-  // Cerrar menú usuario al click afuera
-  // ============================
+  // Cerrar menú usuario cuando se clickea afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     };
@@ -38,27 +33,23 @@ const Navigation: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ============================
-  // ITEMS DEL MENÚ LATERAL
-  // ============================
+  // Items del menú lateral
   const menuItems = [
     { name: "Promociones", path: "/", icon: Package },
     { name: "Catálogo", path: "/b2b/catalogo", icon: Package },
     { name: "Carrito", path: "/b2b/carrito", icon: ShoppingCart },
     { name: "Pedidos", path: "/b2b/pedidos", icon: Package },
-    { name: "Información", path: "/info", icon: Info }, // ⭐ NUEVA PESTAÑA
+    { name: "Información", path: "/info", icon: Info },
     { name: "Configuración", path: "/settings", icon: SettingsIcon }
   ];
 
   return (
     <>
-      {/* =========================================== */}
-      {/*                TOP NAVBAR                   */}
-      {/* =========================================== */}
+      {/* NAVBAR SUPERIOR */}
       <header className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-2">
 
-          {/* LEFT – Botón menú */}
+          {/* LEFT – Botón menú + logo */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -67,21 +58,18 @@ const Navigation: React.FC = () => {
               <Menu size={24} />
             </button>
 
-            {/* Logo */}
             <img src="/image.png" className="h-8 w-8" />
           </div>
 
-          {/* CENTER – Buscador grande estilo Coto ⭐ */}
+          {/* CENTER – BUSCADOR ESTILO COTO */}
           <div className="flex-1 flex justify-center px-4">
             <div className="w-full max-w-xl">
               <SearchBar />
             </div>
           </div>
 
-          {/* RIGHT – Notificaciones + Usuario */}
+          {/* RIGHT – Notificaciones + User menu */}
           <div className="flex items-center gap-4 relative">
-
-            {/* NOTIFICATIONS */}
             <button className="relative p-2 text-gray-600 hover:text-red-600">
               <Bell size={20} />
             </button>
@@ -125,9 +113,7 @@ const Navigation: React.FC = () => {
         </div>
       </header>
 
-      {/* =========================================== */}
-      {/*                 SIDEBAR LEFT                */}
-      {/* =========================================== */}
+      {/* SIDEBAR IZQUIERDO */}
       {sidebarOpen && (
         <>
           <div
@@ -147,7 +133,7 @@ const Navigation: React.FC = () => {
               </button>
             </div>
 
-            {/* LISTA DE ITEMS */}
+            {/* LISTA */}
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -179,4 +165,3 @@ const Navigation: React.FC = () => {
 };
 
 export default Navigation;
-
