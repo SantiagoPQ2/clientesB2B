@@ -1,37 +1,45 @@
-const Info = () => {
+import React from "react";
+
+const Info: React.FC = () => {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Sobre VaFood</h1>
+    <div className="max-w-3xl mx-auto px-6 py-10 bg-white mt-6 rounded-xl shadow-md border border-gray-100">
 
-      <p className="text-gray-600 leading-relaxed mb-4">
-        Somos la <strong>mayor distribuidora de alimentos de Córdoba, Argentina</strong>,
-        abasteciendo comercios, restaurantes, mayoristas y autoservicios con la mayor
-        variedad de productos congelados y refrigerados del mercado.
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">Sobre Nosotros</h1>
+
+      <p className="text-gray-700 leading-relaxed mb-4">
+        Somos <strong>VaFood</strong>, la mayor distribuidora de alimentos de Córdoba, Argentina.
+        Trabajamos hace más de 20 años abasteciendo comercios, supermercados,
+        mayoristas y emprendimientos gastronómicos de toda la provincia.
       </p>
 
-      <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">
-        ¿Cómo funciona este portal B2B?
-      </h2>
-
-      <ul className="list-disc pl-6 text-gray-600 space-y-2">
-        <li>Navegá por el catálogo o buscá productos directamente desde el buscador superior.</li>
-        <li>Agregá la cantidad deseada de cada producto a tu carrito.</li>
-        <li>Confirmá tu pedido y el sistema lo procesará automáticamente.</li>
-        <li>Vas a poder ver el historial y estado de tus pedidos en la pestaña "Pedidos".</li>
-      </ul>
-
-      <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">
-        Entrega y Descuentos
-      </h2>
-
-      <p className="text-gray-600">
-        La entrega se realiza en un plazo de <strong>48 horas hábiles</strong>.  
-        Por tiempo limitado, disfrutá de un <strong>12% de descuento en todos los productos.</strong>
+      <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">¿Cómo funciona nuestra plataforma?</h2>
+      <p className="text-gray-700 leading-relaxed mb-4">
+        • Navegá nuestro catálogo completo dividido por categorías. <br />
+        • Seleccioná los productos y agrega la cantidad que desees al carrito. <br />
+        • Una vez confirmado tu pedido, nuestro equipo lo preparará inmediatamente. <br />
+        • Podés ver tus pedidos en la sección <strong>Pedidos B2B</strong>.
       </p>
 
-      <p className="text-xs text-gray-400 mt-6">
-        Si necesitás ayuda, comunicate con nuestro equipo desde la sección de soporte.
+      <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">Despachos y Entregas</h2>
+      <p className="text-gray-700 leading-relaxed mb-4">
+        La entrega se realiza <strong>en un plazo máximo de 2 días hábiles</strong> desde la confirmación del pedido.  
+        Nuestro equipo logístico coordinará el horario de entrega con vos o tu negocio.
       </p>
+
+      <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">Promoción Vigente</h2>
+      <p className="text-gray-700 leading-relaxed mb-4">
+        Por tiempo limitado, ofrecemos un <strong>12% de descuento en todos los productos del catálogo</strong>,
+        aplicado automáticamente en el carrito.
+      </p>
+
+      <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">Contacto</h2>
+      <p className="text-gray-700 leading-relaxed">
+        📍 Dirección: Av. Siempre Viva 123, Córdoba Capital<br />
+        ☎️ Teléfono: (351) 555-1234<br />
+        🧾 CUIT: 30-70707070-9<br />
+        ✉️ Email: contacto@vafood.com.ar
+      </p>
+
     </div>
   );
 };
