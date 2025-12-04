@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiSearch } from "react-icons/fi";
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabase";
 
@@ -29,9 +29,9 @@ const SearchBar = ({ onProductSelect }) => {
     const q = query.toLowerCase();
 
     const rutas = [
-      { type: "route", icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
-      { type: "route", icon: "📦", nombre: "Pedidos", ruta: "/b2b/pedidos" },
-      { type: "route", icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" }
+      { icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
+      { icon: "📦", nombre: "Pedidos", ruta: "/b2b/pedidos" },
+      { icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" }
     ].filter((i) => i.nombre.toLowerCase().includes(q));
 
     const prods = productos.filter(
@@ -54,9 +54,8 @@ const SearchBar = ({ onProductSelect }) => {
 
   return (
     <div className="relative">
-      {/* INPUT */}
       <div className="flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 shadow-sm">
-        <FiSearch className="text-gray-600 mr-2" size={18} />
+        <Search size={18} className="text-gray-600 mr-2" />
         <input
           type="text"
           placeholder="Buscar..."
@@ -66,7 +65,6 @@ const SearchBar = ({ onProductSelect }) => {
         />
       </div>
 
-      {/* LISTA */}
       {resultados.length > 0 && (
         <div className="absolute top-12 left-0 w-80 bg-white shadow-xl rounded-lg border z-50 max-h-80 overflow-auto">
           {resultados.map((item, i) => (
@@ -75,7 +73,7 @@ const SearchBar = ({ onProductSelect }) => {
               onClick={() => seleccionar(item)}
               className="p-3 flex items-center gap-3 hover:bg-gray-100 cursor-pointer"
             >
-              {"ruta" in item ? (
+              {item.ruta ? (
                 <span className="text-xl">{item.icon}</span>
               ) : (
                 <img
