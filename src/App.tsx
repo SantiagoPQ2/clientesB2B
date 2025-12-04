@@ -9,6 +9,8 @@ import {
 import Navigation from "./components/Navigation";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ProductModalProvider } from "./context/ProductModalContext";
+
 import { useVersionChecker } from "./hooks/useVersionChecker";
 import UpdateBanner from "./components/UpdateBanner";
 
@@ -33,16 +35,12 @@ function ProtectedApp() {
 
   const [openChat, setOpenChat] = useState(false);
 
-  // Si no está logueado → Login
   if (!user) return <Login />;
 
   const role = user.role;
   let allowedRoutes;
 
-  // ================================
-  // 🚀 ADMIN
-  // ================================
-  if (role === "admin") {
+  if (role === "admin" || role === "cliente") {
     allowedRoutes = (
       <Routes>
         <Route path="/" element={<PromosB2B />} />
@@ -53,26 +51,7 @@ function ProtectedApp() {
         <Route path="*" element={<PromosB2B />} />
       </Routes>
     );
-  }
-
-  // ================================
-  // 🚀 CLIENTE
-  // ================================
-  else if (role === "cliente") {
-    allowedRoutes = (
-      <Routes>
-        <Route path="/" element={<PromosB2B />} />
-        <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
-        <Route path="/b2b/carrito" element={<CarritoB2B />} />
-        <Route path="/b2b/pedidos" element={<PedidosB2B />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<PromosB2B />} />
-      </Routes>
-    );
-  }
-
-  // Por si hay un rol raro
-  else {
+  } else {
     allowedRoutes = (
       <Routes>
         <Route path="*" element={<Login />} />
@@ -80,28 +59,23 @@ function ProtectedApp() {
     );
   }
 
-  // Mostrar chatbot solo en B2B
   const showChatBot =
-    location.pathname.startsWith("/b2b") ||
-    location.pathname === "/";
+    location.pathname.startsWith("/b2b") || location.pathname === "/";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-hidden">
+    <ProductModalProvider>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900 transition-colors duration-300 overflow-hidden">
 
-      <Navigation />
+        <Navigation />
 
-      <main className="flex-1 overflow-hidden">{allowedRoutes}</main>
+        <main className="flex-1 overflow-hidden">{allowedRoutes}</main>
 
-      {hasUpdate && <UpdateBanner onReload={() => window.location.reload()} />}
+        {hasUpdate && <UpdateBanner onReload={() => window.location.reload()} />}
 
-      {showChatBot && !openChat && (
-        <ChatBubble onOpen={() => setOpenChat(true)} />
-      )}
-
-      {showChatBot && openChat && (
-        <ChatBot onClose={() => setOpenChat(false)} />
-      )}
-    </div>
+        {showChatBot && !openChat && <ChatBubble onOpen={() => setOpenChat(true)} />}
+        {showChatBot && openChat && <ChatBot onClose={() => setOpenChat(false)} />}
+      </div>
+    </ProductModalProvider>
   );
 }
 
@@ -116,3 +90,4 @@ function App() {
 }
 
 export default App;
+
