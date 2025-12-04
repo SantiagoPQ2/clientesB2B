@@ -130,7 +130,7 @@ const Navigation: React.FC = () => {
           <div className="flex items-center gap-4 relative">
 
             {/* 🔎 BUSCADOR GLOBAL */}
-            <SearchBar onProductSelect={openProductModal} />
+            <SearchBar  />
 
             {/* NOTIFICATIONS */}
             <div className="relative">
