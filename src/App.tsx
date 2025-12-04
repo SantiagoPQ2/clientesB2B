@@ -1,4 +1,4 @@
-zimport React, { useState } from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,7 +9,7 @@ import {
 import Navigation from "./components/Navigation";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ProductModalProvider } from "./context/ProductModalContext";  // ⭐ IMPORTANTE
+import { ProductModalProvider } from "./context/ProductModalContext";
 import { useVersionChecker } from "./hooks/useVersionChecker";
 import UpdateBanner from "./components/UpdateBanner";
 
@@ -22,6 +22,7 @@ import PedidosB2B from "./pages/b2b/Pedidos";
 // Extras
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
+import Info from "./pages/Info";   // ⭐ AGREGADO
 
 // ChatBot
 import ChatBubble from "./components/ChatBubble";
@@ -47,6 +48,7 @@ function ProtectedApp() {
         <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
         <Route path="/b2b/carrito" element={<CarritoB2B />} />
         <Route path="/b2b/pedidos" element={<PedidosB2B />} />
+        <Route path="/info" element={<Info />} /> {/* ⭐ NUEVA PAGE */}
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<PromosB2B />} />
       </Routes>
@@ -60,7 +62,9 @@ function ProtectedApp() {
   }
 
   const showChatBot =
-    location.pathname.startsWith("/b2b") || location.pathname === "/";
+    location.pathname.startsWith("/b2b") ||
+    location.pathname === "/" ||
+    location.pathname === "/info";
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -85,7 +89,7 @@ function ProtectedApp() {
 function App() {
   return (
     <AuthProvider>
-      <ProductModalProvider>      {/* ⭐ ENVOLVIENDO TODA LA APP */}
+      <ProductModalProvider>
         <Router>
           <ProtectedApp />
         </Router>
@@ -95,4 +99,3 @@ function App() {
 }
 
 export default App;
-
