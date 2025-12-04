@@ -7,20 +7,19 @@ import {
 } from "react-router-dom";
 
 import Navigation from "./components/Navigation";
-import Footer from "./components/Footer";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ProductModalProvider } from "./context/ProductModalContext";  // ⭐ IMPORTANTE
 import { useVersionChecker } from "./hooks/useVersionChecker";
 import UpdateBanner from "./components/UpdateBanner";
 
-// B2B Pages
+// B2B PAGES
 import PromosB2B from "./pages/b2b/PromosB2B";
 import CatalogoB2B from "./pages/b2b/Catalogo";
 import CarritoB2B from "./pages/b2b/Carrito";
 import PedidosB2B from "./pages/b2b/Pedidos";
 
-// Extra Pages
-import Info from "./pages/Info";
+// Extras
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 
@@ -35,16 +34,13 @@ function ProtectedApp() {
 
   const [openChat, setOpenChat] = useState(false);
 
-  // Usuario NO logueado → ir al login
   if (!user) return <Login />;
 
   const role = user.role;
+
   let allowedRoutes;
 
-  // ================================
-  // 🚀 ADMIN
-  // ================================
-  if (role === "admin") {
+  if (role === "admin" || role === "cliente") {
     allowedRoutes = (
       <Routes>
         <Route path="/" element={<PromosB2B />} />
@@ -52,31 +48,10 @@ function ProtectedApp() {
         <Route path="/b2b/carrito" element={<CarritoB2B />} />
         <Route path="/b2b/pedidos" element={<PedidosB2B />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/info" element={<Info />} />
         <Route path="*" element={<PromosB2B />} />
       </Routes>
     );
-  }
-
-  // ================================
-  // 🚀 CLIENTE
-  // ================================
-  else if (role === "cliente") {
-    allowedRoutes = (
-      <Routes>
-        <Route path="/" element={<PromosB2B />} />
-        <Route path="/b2b/catalogo" element={<CatalogoB2B />} />
-        <Route path="/b2b/carrito" element={<CarritoB2B />} />
-        <Route path="/b2b/pedidos" element={<PedidosB2B />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/info" element={<Info />} />
-        <Route path="*" element={<PromosB2B />} />
-      </Routes>
-    );
-  }
-
-  // Cualquier rol desconocido
-  else {
+  } else {
     allowedRoutes = (
       <Routes>
         <Route path="*" element={<Login />} />
@@ -84,29 +59,18 @@ function ProtectedApp() {
     );
   }
 
-  // Mostrar chatbot solo en páginas B2B y Promos
   const showChatBot =
-    location.pathname.startsWith("/b2b") ||
-    location.pathname === "/";
+    location.pathname.startsWith("/b2b") || location.pathname === "/";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900 overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
 
-      {/* NAVIGATION NUEVO */}
       <Navigation />
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 overflow-hidden">{allowedRoutes}</main>
 
-      {/* FOOTER GLOBAL */}
-      <Footer />
+      {hasUpdate && <UpdateBanner onReload={() => window.location.reload()} />}
 
-      {/* SISTEMA DE ACTUALIZACIÓN */}
-      {hasUpdate && (
-        <UpdateBanner onReload={() => window.location.reload()} />
-      )}
-
-      {/* CHATBOT */}
       {showChatBot && !openChat && (
         <ChatBubble onOpen={() => setOpenChat(true)} />
       )}
@@ -121,9 +85,11 @@ function ProtectedApp() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <ProtectedApp />
-      </Router>
+      <ProductModalProvider>      {/* ⭐ ENVOLVIENDO TODA LA APP */}
+        <Router>
+          <ProtectedApp />
+        </Router>
+      </ProductModalProvider>
     </AuthProvider>
   );
 }
