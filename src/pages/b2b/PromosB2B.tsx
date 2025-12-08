@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
+import { useProductModal } from "../../context/ProductModalContext"; // ⭐ NUEVO
 
 interface Producto {
   id: string;
@@ -21,6 +22,7 @@ const PromosB2B: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
+  const { openProduct } = useProductModal(); // ⭐ NUEVO
 
   useEffect(() => {
     cargarPromos();
@@ -55,6 +57,7 @@ const PromosB2B: React.FC = () => {
   const cambiarCantidad = (id: string, cantidad: number, stock?: number) => {
     let nueva = Math.floor(cantidad || 0);
     if (stock && stock > 0) nueva = Math.min(nueva, stock);
+
     if (nueva <= 0) {
       const copia = { ...carrito };
       delete copia[id];
@@ -78,6 +81,7 @@ const PromosB2B: React.FC = () => {
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
           {/* PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
@@ -93,7 +97,8 @@ const PromosB2B: React.FC = () => {
                   return (
                     <div
                       key={p.id}
-                      className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
+                      className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col cursor-pointer"
+                      onClick={() => openProduct(p)} // ⭐ ABRIR MODAL IGUAL QUE CATÁLOGO
                     >
                       {/* Imagen */}
                       <div className="h-52 bg-gray-50 flex items-center justify-center">
@@ -140,58 +145,63 @@ const PromosB2B: React.FC = () => {
                             </p>
                           </div>
 
-                          {/* Botón / contador */}
-                          {qty === 0 ? (
-                            <button
-                              disabled={p.stock <= 0}
-                              onClick={() => agregarUno(p.id, p.stock)}
-                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow
+                          {/* Botón / contador (NO se activa al hacer click en el card completo) */}
+                          <div
+                            className="z-20"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {qty === 0 ? (
+                              <button
+                                disabled={p.stock <= 0}
+                                onClick={() => agregarUno(p.id, p.stock)}
+                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow
                                 ${
                                   p.stock <= 0
                                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                                     : "bg-red-600 text-white hover:bg-red-700"
                                 }`}
-                            >
-                              Agregar
-                            </button>
-                          ) : (
-                            <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
-                              <button
-                                onClick={() =>
-                                  cambiarCantidad(p.id, qty - 1, p.stock)
-                                }
-                                className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
                               >
-                                −
+                                Agregar
                               </button>
-                              <input
-                                type="number"
-                                min={0}
-                                value={qty}
-                                onChange={(e) =>
-                                  cambiarCantidad(
-                                    p.id,
-                                    Number(e.target.value),
-                                    p.stock
-                                  )
-                                }
-                                className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
-                              />
-                              <button
-                                onClick={() =>
-                                  agregarUno(p.id, p.stock)
-                                }
-                                disabled={maxed}
-                                className={`px-3 py-1.5 text-sm ${
-                                  maxed
-                                    ? "text-gray-300 cursor-not-allowed"
-                                    : "text-gray-600 hover:bg-gray-100"
-                                }`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          )}
+                            ) : (
+                              <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+                                <button
+                                  onClick={() =>
+                                    cambiarCantidad(p.id, qty - 1, p.stock)
+                                  }
+                                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+                                >
+                                  −
+                                </button>
+                                <input
+                                  type="number"
+                                  value={qty}
+                                  min={0}
+                                  onChange={(e) =>
+                                    cambiarCantidad(
+                                      p.id,
+                                      Number(e.target.value),
+                                      p.stock
+                                    )
+                                  }
+                                  className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
+                                />
+                                <button
+                                  disabled={maxed}
+                                  onClick={() =>
+                                    agregarUno(p.id, p.stock)
+                                  }
+                                  className={`px-3 py-1.5 text-sm ${
+                                    maxed
+                                      ? "text-gray-300 cursor-not-allowed"
+                                      : "text-gray-600 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
