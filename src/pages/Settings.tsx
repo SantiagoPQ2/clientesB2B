@@ -9,12 +9,15 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
-  // 🔹 Cargar perfil desde Supabase
+  /* ======================================
+        Cargar perfil desde clientes_app
+  ====================================== */
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
+
       const { data, error } = await supabase
-        .from("usuarios_app")
+        .from("clientes_app")  // ⭐ CAMBIO DE TABLA
         .select("name, age, phone, mail")
         .eq("id", user.id)
         .single();
@@ -37,12 +40,14 @@ export default function Settings() {
     loadProfile();
   }, [user]);
 
-  // 🔹 Guardar perfil actualizado
+  /* ======================================
+        Guardar perfil
+  ====================================== */
   const saveProfile = async () => {
     if (!user) return;
 
     const { error } = await supabase
-      .from("usuarios_app")
+      .from("clientes_app")  // ⭐ CAMBIO
       .update({
         name: profile.name,
         age: profile.age ? parseInt(profile.age) : null,
@@ -51,16 +56,16 @@ export default function Settings() {
       })
       .eq("id", user.id);
 
-    if (error) {
-      alert("❌ Error al guardar perfil: " + error.message);
-    } else {
-      alert("✅ Perfil actualizado correctamente");
-    }
+    if (error) alert("❌ Error al guardar perfil: " + error.message);
+    else alert("✅ Perfil actualizado correctamente");
   };
 
-  // 🔹 Cambiar contraseña
+  /* ======================================
+        Cambiar contraseña
+  ====================================== */
   const changePassword = async () => {
     if (!user) return;
+
     if (!newPassword || !confirmPassword) {
       alert("⚠️ Completa ambos campos de contraseña");
       return;
@@ -71,7 +76,7 @@ export default function Settings() {
     }
 
     const { error } = await supabase
-      .from("usuarios_app")
+      .from("clientes_app")  // ⭐ CAMBIO
       .update({ password: newPassword })
       .eq("id", user.id);
 
@@ -84,13 +89,17 @@ export default function Settings() {
     }
   };
 
-  // 🔹 Cerrar sesión
+  /* ======================================
+        Logout
+  ====================================== */
   const handleLogout = () => {
     logout();
-    window.location.href = "/"; // Redirige al login
+    window.location.href = "/";
   };
 
-  // 🌙 Modo oscuro - guarda en localStorage y cambia el HTML
+  /* ======================================
+        Dark Mode
+  ====================================== */
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -108,30 +117,30 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 rounded shadow space-y-4 mt-6 bg-white dark:bg-gray-800 dark:text-gray-100 transition-colors">
-      <h2 className="text-xl font-bold flex items-center gap-2">
-        ⚙️ Configuración de Usuario
-      </h2>
+    <div className="max-w-lg mx-auto p-6 rounded shadow space-y-4 mt-6 bg-white dark:bg-gray-800 dark:text-gray-100">
+      <h2 className="text-xl font-bold">⚙️ Configuración de Usuario</h2>
 
-      {/* Info básica */}
       <input
         placeholder="Nombre"
         value={profile.name}
         onChange={(e) => setProfile({ ...profile, name: e.target.value })}
         className="border p-2 w-full rounded dark:bg-gray-700 dark:border-gray-600"
       />
+
       <input
         placeholder="Edad"
         value={profile.age}
         onChange={(e) => setProfile({ ...profile, age: e.target.value })}
         className="border p-2 w-full rounded dark:bg-gray-700 dark:border-gray-600"
       />
+
       <input
         placeholder="Teléfono"
         value={profile.phone}
         onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
         className="border p-2 w-full rounded dark:bg-gray-700 dark:border-gray-600"
       />
+
       <input
         placeholder="Correo electrónico"
         type="email"
@@ -142,15 +151,15 @@ export default function Settings() {
 
       <button
         onClick={saveProfile}
-        className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded w-full transition-colors"
+        className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded w-full"
       >
         Guardar perfil
       </button>
 
       <hr className="my-4 border-gray-300 dark:border-gray-600" />
 
-      {/* Cambio de contraseña */}
       <h3 className="text-lg font-semibold">🔑 Cambiar contraseña</h3>
+
       <input
         type="password"
         placeholder="Nueva contraseña"
@@ -158,6 +167,7 @@ export default function Settings() {
         onChange={(e) => setNewPassword(e.target.value)}
         className="border p-2 w-full rounded dark:bg-gray-700 dark:border-gray-600"
       />
+
       <input
         type="password"
         placeholder="Confirmar nueva contraseña"
@@ -168,7 +178,7 @@ export default function Settings() {
 
       <button
         onClick={changePassword}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full transition-colors"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full"
       >
         Cambiar contraseña
       </button>
@@ -192,7 +202,7 @@ export default function Settings() {
 
       <button
         onClick={handleLogout}
-        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded w-full mt-2 transition-colors"
+        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded w-full mt-2"
       >
         Cerrar sesión
       </button>
