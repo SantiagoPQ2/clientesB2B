@@ -19,14 +19,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null);
 
+  // 🔹 Cargar usuario desde localStorage
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (stored) setUser(JSON.parse(stored));
   }, []);
 
+  // 🔹 LOGIN usando clientes_app
   const login = async (username: string, password: string) => {
     const { data, error } = await supabase
-      .from("usuarios_app") 
+      .from("clientes_app") // ⭐ AHORA USA ESTA TABLA
       .select("*")
       .eq("username", username)
       .eq("password", password)
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  // 🔹 LOGOUT
   const logout = () => {
     localStorage.removeItem("user");
     setUser(null);
