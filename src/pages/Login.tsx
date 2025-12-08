@@ -1,35 +1,35 @@
-import { useState } from "react"
-import { supabase } from "../config/supabase"
-import { useAuth } from "../context/AuthContext"
+import { useState } from "react";
+import { supabase } from "../config/supabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login } = useAuth();
 
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [mail, setMail] = useState("")
-  const [error, setError] = useState("")
-  const [mode, setMode] = useState<"login" | "recover" | "success">("login")
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [mail, setMail] = useState("");
+  const [error, setError] = useState("");
+  const [mode, setMode] = useState<"login" | "recover" | "success">("login");
 
   // 🔹 Iniciar sesión normal
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const ok = await login(username, password)
+    e.preventDefault();
+    const ok = await login(username, password);
 
     if (!ok) {
-      setError("❌ Usuario o contraseña incorrectos")
+      setError("❌ Usuario o contraseña incorrectos");
     } else {
-      window.location.href = "/" // redirige al home
+      window.location.href = "/";
     }
-  }
+  };
 
-  // 🔹 Recuperar contraseña (REAL con Edge Function)
+  // 🔹 Recuperar contraseña (via función edge)
   const handleRecover = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!mail) {
-      setError("⚠️ Ingresá tu correo para recuperar la contraseña")
-      return
+      setError("⚠️ Ingresá tu correo para recuperar la contraseña");
+      return;
     }
 
     try {
@@ -40,28 +40,26 @@ export default function Login() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: mail }),
         }
-      )
+      );
 
-      const json = await res.json()
+      const json = await res.json();
 
       if (!res.ok) {
-        setError("❌ No existe ese correo en nuestros registros")
-        return
+        setError("❌ No existe ese correo en nuestros registros");
+        return;
       }
 
-      // ÉXITO
-      setMode("success")
-      setError("")
-    } catch (err: any) {
-      setError("❌ Error enviando el correo")
+      setMode("success");
+      setError("");
+    } catch (err) {
+      setError("❌ Error enviando el correo");
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-200 to-gray-100">
       <div className="bg-white p-8 rounded-xl shadow-xl w-96 border-t-8 border-[#8B0000] transition-all hover:scale-[1.01] duration-300">
 
-        {/* 🔻 ENCABEZADO */}
         <div className="text-center mb-6">
           <img
             src="/image.png"
@@ -84,7 +82,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* 🔻 LOGIN */}
         {mode === "login" && (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <p className="text-red-600 text-sm text-center">{error}</p>}
@@ -94,7 +91,7 @@ export default function Login() {
               placeholder="Usuario"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#8B0000] outline-none"
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
             />
 
             <input
@@ -102,7 +99,7 @@ export default function Login() {
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#8B0000] outline-none"
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
             />
 
             <button
@@ -118,8 +115,8 @@ export default function Login() {
                 type="button"
                 className="text-[#8B0000] font-semibold hover:underline"
                 onClick={() => {
-                  setMode("recover")
-                  setError("")
+                  setMode("recover");
+                  setError("");
                 }}
               >
                 Recuperar
@@ -128,7 +125,6 @@ export default function Login() {
           </form>
         )}
 
-        {/* 🔻 RECUPERAR CONTRASEÑA */}
         {mode === "recover" && (
           <form onSubmit={handleRecover} className="space-y-4">
             {error && <p className="text-red-600 text-sm text-center">{error}</p>}
@@ -138,7 +134,7 @@ export default function Login() {
               placeholder="Correo electrónico"
               value={mail}
               onChange={(e) => setMail(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#8B0000] outline-none"
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
             />
 
             <button
@@ -154,9 +150,9 @@ export default function Login() {
                 type="button"
                 className="text-[#8B0000] font-semibold hover:underline"
                 onClick={() => {
-                  setMode("login")
-                  setMail("")
-                  setError("")
+                  setMode("login");
+                  setMail("");
+                  setError("");
                 }}
               >
                 Volver a iniciar sesión
@@ -165,10 +161,8 @@ export default function Login() {
           </form>
         )}
 
-        {/* 🔻 CONFIRMACIÓN */}
         {mode === "success" && (
           <div className="text-center space-y-4">
-
             <div className="flex justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -191,14 +185,13 @@ export default function Login() {
             </h2>
 
             <p className="text-gray-600 text-sm">
-              Te enviamos un correo con las instrucciones para restablecer tu
-              contraseña. Revisá tu bandeja de entrada o spam.
+              Te enviamos un correo con las instrucciones para restablecer tu contraseña.
             </p>
 
             <button
               onClick={() => {
-                setMode("login")
-                setMail("")
+                setMode("login");
+                setMail("");
               }}
               className="w-full bg-[#8B0000] text-white py-2 rounded-lg font-semibold hover:bg-red-900 transition mt-4"
             >
@@ -208,6 +201,6 @@ export default function Login() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
