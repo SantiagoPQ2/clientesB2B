@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "../config/supabase";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -11,7 +10,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"login" | "recover" | "success">("login");
 
-  // 🔹 Iniciar sesión normal
+  // ============================================================
+  // 🔹 LOGIN NORMAL
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const ok = await login(username, password);
@@ -23,7 +24,9 @@ export default function Login() {
     }
   };
 
-  // 🔹 Recuperar contraseña (via función edge)
+  // ============================================================
+  // 🔹 RECUPERAR CONTRASEÑA → EDGE FUNCTION
+  // ============================================================
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -42,8 +45,6 @@ export default function Login() {
         }
       );
 
-      const json = await res.json();
-
       if (!res.ok) {
         setError("❌ No existe ese correo en nuestros registros");
         return;
@@ -56,55 +57,82 @@ export default function Login() {
     }
   };
 
+  // ============================================================
+  // 🔹 ESTILOS Y UI
+  // ============================================================
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-200 to-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-xl w-96 border-t-8 border-[#8B0000] transition-all hover:scale-[1.01] duration-300">
+    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-red-50">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl w-[380px] border border-gray-200 transition-all hover:shadow-xl duration-300">
 
+        {/* LOGO + TITULO */}
         <div className="text-center mb-6">
           <img
             src="/image.png"
             alt="VaFood Logo"
-            className="mx-auto h-16 w-16 rounded-full shadow-lg"
+            className="mx-auto h-20 w-20 rounded-full shadow-md"
           />
 
-          <h2 className="text-2xl font-bold text-[#8B0000] mt-3">
+          <h2 className="text-3xl font-bold text-red-700 mt-4 tracking-tight">
             {mode === "login"
-              ? "Iniciar Sesión"
+              ? "Bienvenido"
               : mode === "recover"
               ? "Recuperar Contraseña"
-              : "Correo Enviado"}
+              : "Correo enviado"}
           </h2>
 
-          <p className="text-gray-600 text-sm">
-            {mode === "success"
-              ? "Revisá tu bandeja de entrada"
-              : "Sistema de consulta de clientes"}
-          </p>
+          {mode !== "success" && (
+            <p className="text-gray-500 mt-1 text-sm">
+              Accedé a tu cuenta de VaFood
+            </p>
+          )}
+
+          {mode === "success" && (
+            <p className="text-gray-600 text-sm">
+              Revisá tu correo electrónico para continuar.
+            </p>
+          )}
         </div>
 
+        {/* ============================ */}
+        {/*    FORMULARIO LOGIN         */}
+        {/* ============================ */}
+
         {mode === "login" && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4 animate-fadeIn">
 
-            <input
-              type="text"
-              placeholder="Usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-            />
+            {error && (
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            )}
 
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-            />
+            <div>
+              <label className="text-xs text-gray-600 font-medium ml-1">
+                Usuario
+              </label>
+              <input
+                type="text"
+                placeholder="Tu usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg mt-1 focus:ring-2 focus:ring-red-600 outline-none text-gray-800"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-600 font-medium ml-1">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                placeholder="Tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg mt-1 focus:ring-2 focus:ring-red-600 outline-none text-gray-800"
+              />
+            </div>
 
             <button
               type="submit"
-              className="w-full bg-[#8B0000] text-white py-2 rounded-lg font-semibold hover:bg-red-900 transition"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-semibold transition shadow"
             >
               Entrar
             </button>
@@ -113,7 +141,7 @@ export default function Login() {
               ¿Olvidaste tu contraseña?{" "}
               <button
                 type="button"
-                className="text-[#8B0000] font-semibold hover:underline"
+                className="text-red-700 font-semibold hover:underline"
                 onClick={() => {
                   setMode("recover");
                   setError("");
@@ -125,21 +153,32 @@ export default function Login() {
           </form>
         )}
 
-        {mode === "recover" && (
-          <form onSubmit={handleRecover} className="space-y-4">
-            {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+        {/* ============================ */}
+        {/* RECUPERAR CONTRASEÑA         */}
+        {/* ============================ */}
 
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              value={mail}
-              onChange={(e) => setMail(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-            />
+        {mode === "recover" && (
+          <form onSubmit={handleRecover} className="space-y-4 animate-fadeIn">
+            {error && (
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            )}
+
+            <div>
+              <label className="text-xs text-gray-600 font-medium ml-1">
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                placeholder="ejemplo@mail.com"
+                value={mail}
+                onChange={(e) => setMail(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg mt-1 focus:ring-2 focus:ring-red-600 outline-none text-gray-800"
+              />
+            </div>
 
             <button
               type="submit"
-              className="w-full bg-[#8B0000] text-white py-2 rounded-lg font-semibold hover:bg-red-900 transition"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-semibold transition shadow"
             >
               Enviar correo de recuperación
             </button>
@@ -148,25 +187,30 @@ export default function Login() {
               ¿Recordaste tu contraseña?{" "}
               <button
                 type="button"
-                className="text-[#8B0000] font-semibold hover:underline"
+                className="text-red-700 font-semibold hover:underline"
                 onClick={() => {
                   setMode("login");
                   setMail("");
                   setError("");
                 }}
               >
-                Volver a iniciar sesión
+                Volver al inicio
               </button>
             </p>
           </form>
         )}
 
+        {/* ============================ */}
+        {/*    CORREO ENVIADO (OK)       */}
+        {/* ============================ */}
+
         {mode === "success" && (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 animate-fadeIn">
+
             <div className="flex justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-20 w-20 text-[#8B0000]"
+                className="h-20 w-20 text-red-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -180,12 +224,13 @@ export default function Login() {
               </svg>
             </div>
 
-            <h2 className="text-xl font-bold text-[#8B0000]">
-              ¡Correo de recuperación enviado!
+            <h2 className="text-xl font-bold text-red-700">
+              ¡Correo enviado!
             </h2>
 
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-sm px-4">
               Te enviamos un correo con las instrucciones para restablecer tu contraseña.
+              Revisá tu bandeja de entrada o spam.
             </p>
 
             <button
@@ -193,7 +238,7 @@ export default function Login() {
                 setMode("login");
                 setMail("");
               }}
-              className="w-full bg-[#8B0000] text-white py-2 rounded-lg font-semibold hover:bg-red-900 transition mt-4"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-semibold transition shadow mt-4"
             >
               Volver al inicio
             </button>
@@ -203,4 +248,3 @@ export default function Login() {
     </div>
   );
 }
-
