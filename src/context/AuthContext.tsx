@@ -19,16 +19,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null);
 
-  // 🔹 Cargar usuario desde localStorage
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (stored) setUser(JSON.parse(stored));
   }, []);
 
-  // 🔹 LOGIN usando clientes_app
   const login = async (username: string, password: string) => {
     const { data, error } = await supabase
-      .from("clientes_app") // ⭐ AHORA USA ESTA TABLA
+      .from("clientes_app") // ⭐ USA LA TABLA CORRECTA
       .select("*")
       .eq("username", username)
       .eq("password", password)
@@ -37,18 +35,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data) return false;
 
     const u = {
-      id: data.id,
-      username: data.username,
+      id: data.id,           // UUID
+      username: data.username, // EL CÓDIGO DEL CLIENTE (ej: 8885)
       role: data.role,
-      name: data.name,
+      name: data.name ?? "",
     };
 
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
+
     return true;
   };
 
-  // 🔹 LOGOUT
   const logout = () => {
     localStorage.removeItem("user");
     setUser(null);
