@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
-import { useProductModal } from "../../context/ProductModalContext"; // ⭐ NUEVO
+import { useProductModal } from "../../context/ProductModalContext"; // ⭐ NECESARIO
 
 interface Producto {
   id: string;
@@ -22,7 +22,8 @@ const PromosB2B: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
-  const { openProduct } = useProductModal(); // ⭐ NUEVO
+
+  const { openProduct } = useProductModal(); // ⭐ PARA ABRIR EL MODAL
 
   useEffect(() => {
     cargarPromos();
@@ -82,7 +83,7 @@ const PromosB2B: React.FC = () => {
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-          {/* PROMOS */}
+          {/* LISTA DE PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
               <div className="bg-white p-8 rounded-xl shadow text-center text-gray-500">
@@ -97,112 +98,103 @@ const PromosB2B: React.FC = () => {
                   return (
                     <div
                       key={p.id}
-                      className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col cursor-pointer"
-                      onClick={() => openProduct(p)} // ⭐ ABRIR MODAL IGUAL QUE CATÁLOGO
+                      className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                     >
-                      {/* Imagen */}
-                      <div className="h-52 bg-gray-50 flex items-center justify-center">
-                        {p.imagen_url ? (
-                          <img
-                            src={p.imagen_url}
-                            alt={p.nombre}
-                            className="max-h-full object-contain"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-xs text-center px-2">
-                            Sin imagen <br /> {p.articulo}
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Info */}
-                      <div className="p-4 flex flex-col flex-1">
-                        <div className="mb-2">
+                      {/* ZONA CLICKEABLE PARA ABRIR EL MODAL */}
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => openProduct(p)}   // ⭐ ABRE MODAL
+                      >
+                        {/* Imagen */}
+                        <div className="h-52 bg-gray-50 flex items-center justify-center">
+                          {p.imagen_url ? (
+                            <img
+                              src={p.imagen_url}
+                              alt={p.nombre}
+                              className="max-h-full object-contain"
+                            />
+                          ) : (
+                            <div className="text-gray-400 text-xs text-center px-2">
+                              Sin imagen <br /> {p.articulo}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="p-4">
                           <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-md">
                             PROMO
                           </span>
+
+                          <h3 className="text-sm font-bold text-gray-900 mt-2 line-clamp-2">
+                            {p.nombre}
+                          </h3>
+
+                          <p className="text-xs text-gray-500 mt-1 mb-4">
+                            {p.marca} • {p.categoria}
+                          </p>
+
+                          <p className="text-[10px] text-gray-400 uppercase">
+                            Precio promo
+                          </p>
+                          <p className="text-xl font-bold text-red-600">
+                            $
+                            {(p.precio ?? 0).toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
                         </div>
+                      </div>
 
-                        <h3 className="text-sm font-bold text-gray-900 line-clamp-2">
-                          {p.nombre}
-                        </h3>
-
-                        <p className="text-xs text-gray-500 mt-1 mb-4">
-                          {p.marca} • {p.categoria}
-                        </p>
-
-                        <div className="flex items-center justify-between mt-auto">
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase">
-                              Precio promo
-                            </p>
-                            <p className="text-xl font-bold text-red-600">
-                              $
-                              {(p.precio ?? 0).toLocaleString("es-AR", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </p>
-                          </div>
-
-                          {/* Botón / contador (NO se activa al hacer click en el card completo) */}
-                          <div
-                            className="z-20"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {qty === 0 ? (
-                              <button
-                                disabled={p.stock <= 0}
-                                onClick={() => agregarUno(p.id, p.stock)}
-                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow
+                      {/* CONTROLES DEL CARRITO */}
+                      <div className="p-4 pt-0 mt-auto" onClick={(e) => e.stopPropagation()}>
+                        {qty === 0 ? (
+                          <button
+                            disabled={p.stock <= 0}
+                            onClick={() => agregarUno(p.id, p.stock)}
+                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow w-full
                                 ${
                                   p.stock <= 0
                                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                                     : "bg-red-600 text-white hover:bg-red-700"
                                 }`}
-                              >
-                                Agregar
-                              </button>
-                            ) : (
-                              <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
-                                <button
-                                  onClick={() =>
-                                    cambiarCantidad(p.id, qty - 1, p.stock)
-                                  }
-                                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
-                                >
-                                  −
-                                </button>
-                                <input
-                                  type="number"
-                                  value={qty}
-                                  min={0}
-                                  onChange={(e) =>
-                                    cambiarCantidad(
-                                      p.id,
-                                      Number(e.target.value),
-                                      p.stock
-                                    )
-                                  }
-                                  className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
-                                />
-                                <button
-                                  disabled={maxed}
-                                  onClick={() =>
-                                    agregarUno(p.id, p.stock)
-                                  }
-                                  className={`px-3 py-1.5 text-sm ${
-                                    maxed
-                                      ? "text-gray-300 cursor-not-allowed"
-                                      : "text-gray-600 hover:bg-gray-100"
-                                  }`}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            )}
+                          >
+                            Agregar
+                          </button>
+                        ) : (
+                          <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm w-full justify-center">
+                            <button
+                              onClick={() => cambiarCantidad(p.id, qty - 1, p.stock)}
+                              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+                            >
+                              −
+                            </button>
+
+                            <input
+                              type="number"
+                              value={qty}
+                              min={0}
+                              onChange={(e) =>
+                                cambiarCantidad(p.id, Number(e.target.value), p.stock)
+                              }
+                              className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
+                            />
+
+                            <button
+                              disabled={maxed}
+                              onClick={() => agregarUno(p.id, p.stock)}
+                              className={`px-3 py-1.5 text-sm ${
+                                maxed
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                            >
+                              +
+                            </button>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -211,7 +203,7 @@ const PromosB2B: React.FC = () => {
             )}
           </div>
 
-          {/* CARRITO LATERAL */}
+          {/* PANEL LATERAL DEL CARRITO */}
           <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
@@ -223,7 +215,7 @@ const PromosB2B: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* MODAL DE NAVEGACIÓN */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
