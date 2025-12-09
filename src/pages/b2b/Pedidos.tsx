@@ -7,9 +7,8 @@ interface Pedido {
   id: string;
   total: number;
   created_at: string;
-  estado?: string;
+  estado: string;
   cliente_id: string;
-  cliente_username?: string; // ⭐ agregado manualmente
 }
 
 interface Item {
@@ -39,45 +38,30 @@ const PedidosB2B: React.FC = () => {
     if (user) cargarPedidos();
   }, [user]);
 
-  // ============================================================
-  // CARGAR PEDIDOS + luego username del cliente
-  // ============================================================
+  // ===============================================
+  // CARGAR PEDIDOS
+  // ===============================================
   const cargarPedidos = async () => {
+    if (!user) return;
+
     let query = supabase.from("z_pedidos").select("*");
 
-    if (user?.role !== "admin") {
-      query = query.eq("cliente_id", user.id);
+    if (user.role !== "admin") {
+      query = query.eq("cliente_id", user.username); // ⭐ AHORA MATCH POR USERNAME
     }
 
-    const { data: pedidosBase, error } = await query.order("created_at", {
-      ascending: false,
-    });
-
+    const { data, error } = await query.order("created_at", { ascending: false });
     if (error) {
       console.error("Error cargando pedidos:", error);
       return;
     }
 
-    // 2) Obtener todos los clientes
-    const { data: clientes } = await supabase
-      .from("clientes_app")
-      .select("id, username");
-
-    // 3) unir manualmente
-    const pedidosConNombre = pedidosBase?.map((p) => {
-      const cliente = clientes?.find((c) => c.id === p.cliente_id);
-      return {
-        ...p,
-        cliente_username: cliente?.username ?? "—",
-      };
-    });
-
-    setPedidos(pedidosConNombre || []);
+    setPedidos(data || []);
   };
 
-  // ============================================================
-  // Cargar items
-  // ============================================================
+  // ===============================================
+  // CARGAR ITEMS DE PEDIDO
+  // ===============================================
   const cargarItems = async (pedidoId: string) => {
     setSelected((prev) => (prev === pedidoId ? "" : pedidoId));
 
@@ -92,11 +76,14 @@ const PedidosB2B: React.FC = () => {
   const itemsDePedido = (pedidoId: string) =>
     items.filter((i) => i.pedido_id === pedidoId);
 
-  // ============================================================
-  // Cambiar estado
-  // ============================================================
+  // ===============================================
+  // CAMBIAR ESTADO (SOLO ADMIN)
+  // ===============================================
   const actualizarEstado = async (pedidoId: string, nuevoEstado: string) => {
-    await supabase.from("z_pedidos").update({ estado: nuevoEstado }).eq("id", pedidoId);
+    await supabase
+      .from("z_pedidos")
+      .update({ estado: nuevoEstado })
+      .eq("id", pedidoId);
 
     setPedidos((prev) =>
       prev.map((p) =>
@@ -105,17 +92,17 @@ const PedidosB2B: React.FC = () => {
     );
   };
 
-  // ============================================================
-  // Filtro
-  // ============================================================
+  // ===============================================
+  // FILTRADO
+  // ===============================================
   const pedidosFiltrados =
     filtroEstado === "todos"
       ? pedidos
       : pedidos.filter((p) => p.estado === filtroEstado);
 
-  // ============================================================
-  // Exportar Excel
-  // ============================================================
+  // ===============================================
+  // EXPORTAR EXCEL
+  // ===============================================
   const exportarExcel = async () => {
     let rows: any[] = [];
 
@@ -127,7 +114,7 @@ const PedidosB2B: React.FC = () => {
 
       detalle?.forEach((i) => {
         rows.push({
-          cliente: p.cliente_username,
+          cliente: p.cliente_id, // username
           articulo: i.articulo,
           cantidad: i.cantidad,
           subtotal: i.subtotal,
@@ -144,9 +131,9 @@ const PedidosB2B: React.FC = () => {
     XLSX.writeFile(wb, "pedidos.xlsx");
   };
 
-  // ============================================================
+  // ===============================================
   // UI
-  // ============================================================
+  // ===============================================
   return (
     <div className="w-full">
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -193,7 +180,6 @@ const PedidosB2B: React.FC = () => {
                 >
                   <div className="flex flex-col sm:flex-row sm:justify-between">
 
-                    {/* IZQUIERDA */}
                     <div>
                       <p className="text-xs text-gray-400">PEDIDO</p>
 
@@ -201,7 +187,9 @@ const PedidosB2B: React.FC = () => {
                         <span className="font-bold">#{p.id.slice(0, 8)}</span>
 
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-semibold ${ESTADOS[p.estado || "pendiente"].color}`}
+                          className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            ESTADOS[p.estado || "pendiente"].color
+                          }`}
                         >
                           {ESTADOS[p.estado || "pendiente"].label}
                         </span>
@@ -209,7 +197,7 @@ const PedidosB2B: React.FC = () => {
                         {user?.role === "admin" && (
                           <select
                             className="border text-xs rounded px-2 py-1"
-                            value={p.estado || "pendiente"}
+                            value={p.estado}
                             onChange={(e) =>
                               actualizarEstado(p.id, e.target.value)
                             }
@@ -222,13 +210,12 @@ const PedidosB2B: React.FC = () => {
                       </div>
 
                       <p className="text-xs text-gray-700 mt-1">
-                        Cliente: <b>{p.cliente_username}</b>
+                        Cliente: <b>{p.cliente_id}</b>
                       </p>
 
                       <p className="text-xs text-gray-500">{fecha}</p>
                     </div>
 
-                    {/* DERECHA */}
                     <div className="text-right">
                       <p className="text-xs text-gray-400 uppercase">TOTAL</p>
                       <p className="text-lg font-bold text-red-600">
@@ -241,7 +228,6 @@ const PedidosB2B: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* BOTÓN DETALLE */}
                   <button
                     onClick={() => cargarItems(p.id)}
                     className="text-xs text-red-600 mt-3"
@@ -284,4 +270,3 @@ const PedidosB2B: React.FC = () => {
 };
 
 export default PedidosB2B;
-
