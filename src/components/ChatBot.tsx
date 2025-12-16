@@ -1,23 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { askAI } from "../services/aiBot";
 
-interface ProductForAI {
-  name: string;
-  price: number;
-}
-
-interface Props {
-  products: ProductForAI[];
-}
-
-const ChatBot: React.FC<Props> = ({ products }) => {
+const ChatBot: React.FC = () => {
   const [messages, setMessages] = useState<
     { from: "user" | "bot"; text: string }[]
   >([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
   const chatRef = useRef<HTMLDivElement>(null);
 
   // Mensaje inicial
@@ -40,25 +30,23 @@ const ChatBot: React.FC<Props> = ({ products }) => {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = input;
-    setMessages((prev) => [...prev, { from: "user", text: userMsg }]);
+    const msg = input;
     setInput("");
+    setMessages((prev) => [...prev, { from: "user", text: msg }]);
     setLoading(true);
 
-    const botReply = await askAI(userMsg, products);
+    const reply = await askAI(msg);
 
-    setMessages((prev) => [...prev, { from: "bot", text: botReply }]);
+    setMessages((prev) => [...prev, { from: "bot", text: reply }]);
     setLoading(false);
   };
 
   return (
-    <div className="mt-4 bg-white rounded-xl shadow-md border flex flex-col h-[280px]">
-      {/* HEADER */}
-      <div className="px-4 py-2 border-b font-semibold text-sm text-gray-800">
+    <div className="mt-4 bg-white rounded-xl shadow-md border flex flex-col h-[300px]">
+      <div className="px-4 py-2 border-b font-semibold text-sm">
         Franchesca · Asistente de ventas
       </div>
 
-      {/* CHAT */}
       <div
         ref={chatRef}
         className="flex-1 p-3 overflow-y-auto space-y-3 text-sm"
@@ -83,22 +71,20 @@ const ChatBot: React.FC<Props> = ({ products }) => {
         ))}
 
         {loading && (
-          <div className="text-gray-400 text-xs italic">
+          <div className="text-xs text-gray-400 italic">
             Franchesca está escribiendo…
           </div>
         )}
       </div>
 
-      {/* INPUT */}
-      <div className="p-2 border-t flex items-center gap-2">
+      <div className="border-t p-2 flex gap-2">
         <input
-          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-600"
+          className="flex-1 border rounded-lg px-3 py-2 text-sm"
           placeholder="Escribí tu consulta…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
-
         <button
           onClick={sendMessage}
           className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg"
