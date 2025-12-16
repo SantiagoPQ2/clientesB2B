@@ -8,8 +8,8 @@ const Info: React.FC = () => {
 
       <p className="text-gray-700 leading-relaxed mb-4">
         Somos <strong>VaFood</strong>, la mayor distribuidora de alimentos de Córdoba, Argentina.
-        Trabajamos hace más de 20 años abasteciendo comercios, supermercados,
-        mayoristas y emprendimientos gastronómicos de toda la provincia.
+        Trabajamos hace más de 5 años abasteciendo comercios, supermercados Y
+        mayoristas de toda la provincia.
       </p>
 
       <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">¿Cómo funciona nuestra plataforma?</h2>
@@ -34,10 +34,10 @@ const Info: React.FC = () => {
 
       <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">Contacto</h2>
       <p className="text-gray-700 leading-relaxed">
-        📍 Dirección: Av. Siempre Viva 123, Córdoba Capital<br />
-        ☎️ Teléfono: (351) 555-1234<br />
-        🧾 CUIT: 30-70707070-9<br />
-        ✉️ Email: contacto@vafood.com.ar
+        📍 Dirección: Elpidio Gonzalez 1100, Villa Allende CP5105<br />
+        ☎️ Teléfono: (351) 809-9099<br />
+        🧾 CUIT: 30-71560964-5<br />
+        ✉️ Email: comercial@vafood.com.ar
       </p>
 
     </div>
