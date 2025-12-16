@@ -1,4 +1,3 @@
-// src/services/aiBot.ts
 import { supabase } from "../config/supabase";
 import { addToCart, removeFromCart, setCartQty } from "./cartActions";
 
@@ -6,49 +5,45 @@ const API_KEY = import.meta.env.VITE_OPENAI_KEY;
 
 export async function askAI(userMessage: string): Promise<string> {
   try {
-    // ⭐ 1) Obtener catálogo real desde Supabase
-    const { data: productos } = await supabase
+    // 1️⃣ Catálogo real desde Supabase
+    const { data: productos, error } = await supabase
       .from("z_productos")
-      .select("id, articulo, nombre, marca, categoria, precio");
+      .select("id, nombre, marca, categoria, precio");
 
-    // Transformar catálogo a formato legible
+    if (error || !productos) {
+      return "No pude acceder al catálogo en este momento.";
+    }
+
     const catalogo = productos
-      ?.map(
+      .map(
         (p) =>
-          `${p.nombre} | marca ${p.marca || "-"} | categoría ${
-            p.categoria || "-"
-          } | precio $${p.precio}`
+          `• ${p.nombre} – $${p.precio.toLocaleString("es-AR", {
+            minimumFractionDigits: 2,
+          })}`
       )
       .join("\n");
 
-    // ⭐ 2) Prompt anti-alucinación + formato itemizado SIEMPRE
+    // 2️⃣ Prompt de sistema (anti-alucinación)
     const systemPrompt = `
-Sos el asistente B2B de VaFood.
+Sos Franchesca, la asistente de ventas B2B de VaFood.
 
-REGLAS OBLIGATORIAS:
-1) SOLO podés usar los productos reales del catálogo adjunto.
-2) NO inventes productos, marcas ni categorías.
-3) SI no existe → respondé: "Ese producto no figura en catálogo."
-4) Tus respuestas deben ser MUY cortas, claras y profesionales.
-5) CUANDO respondas con un listado, siempre debe ser un ítem por renglón.
-6) Formato OBLIGATORIO:
-   • Nombre del producto – $precio
-7) NO muestres stock.
-8) NO muestres códigos de artículo.
-9) NO pegues los ítems en una sola línea. Siempre una línea por producto.
-10) NO uses textos largos.
+REGLAS ESTRICTAS:
+- Respondé SIEMPRE en español.
+- Usá SOLO el catálogo provisto.
+- NO inventes productos ni precios.
+- Si el producto no existe, decí: "Ese producto no figura en catálogo."
+- Las entregas son dentro de las 48 horas hábiles.
+- No hay más promociones que las visibles en la página.
+- Sé breve, clara y profesional.
 
-EJEMPLO OBLIGATORIO:
-Estas hamburguesas figuran en catálogo:
-• Paty Clásica X6 – $1250.00
-• Paty Premium X4 – $2630.00
-• GreenLife Veggie – $2300.00
+FORMATO:
+• Nombre del producto – $precio
 
-Catálogo oficial:
+CATÁLOGO OFICIAL:
 ${catalogo}
 `;
 
-    // ⭐ 3) Llamada a OpenAI
+    // 3️⃣ Llamada a OpenAI
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -57,6 +52,7 @@ ${catalogo}
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        temperature: 0.2,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -65,87 +61,87 @@ ${catalogo}
     });
 
     const data = await res.json();
+
     const reply =
       data?.choices?.[0]?.message?.content ||
       "No pude entender tu consulta.";
 
-    // ⭐ 4) Ejecutar acciones de carrito según el mensaje
-    await interpretarAcciones(userMessage);
+    // 4️⃣ Interpretar acciones de carrito
+    await interpretarAcciones(userMessage, productos);
 
     return reply;
-  } catch (error) {
-    console.error("Error en askAI:", error);
+  } catch (err) {
+    console.error("askAI error:", err);
     return "Hubo un error procesando tu mensaje.";
   }
 }
 
-// -------------------------------------------------------------
-// 🔧 Interpretar acciones: agregar / sacar / setear cantidades
-// -------------------------------------------------------------
-async function interpretarAcciones(msg: string) {
-  msg = msg.toLowerCase();
+// ============================================================
+// 🛒 Acciones de carrito por lenguaje natural
+// ============================================================
+async function interpretarAcciones(
+  msg: string,
+  productos: any[]
+) {
+  const texto = msg.toLowerCase();
+
+  const producto = buscarProducto(texto, productos);
+  if (!producto) return;
+
+  const cantidad = extraerNumero(texto) || 1;
 
   if (
-    msg.includes("agrega") ||
-    msg.includes("añade") ||
-    msg.includes("sumá") ||
-    msg.includes("sumar") ||
-    msg.includes("poneme")
+    texto.includes("agrega") ||
+    texto.includes("agregá") ||
+    texto.includes("sumá") ||
+    texto.includes("añadí") ||
+    texto.includes("poneme")
   ) {
-    const cantidad = extraerNumero(msg) || 1;
-    const producto = await buscarProducto(msg);
-    if (producto) addToCart(producto.id, cantidad);
+    addToCart(producto.id, cantidad);
   }
 
   if (
-    msg.includes("saca") ||
-    msg.includes("elimina") ||
-    msg.includes("quitar") ||
-    msg.includes("borra")
+    texto.includes("sacá") ||
+    texto.includes("eliminá") ||
+    texto.includes("quitá")
   ) {
-    const producto = await buscarProducto(msg);
-    if (producto) removeFromCart(producto.id);
+    removeFromCart(producto.id);
   }
 
   if (
-    msg.includes("ponele") ||
-    msg.includes("coloca") ||
-    msg.includes("setea") ||
-    msg.includes("ajusta")
+    texto.includes("poné") ||
+    texto.includes("ajustá") ||
+    texto.includes("setea")
   ) {
-    const cantidad = extraerNumero(msg);
-    const producto = await buscarProducto(msg);
-
-    if (producto && cantidad) setCartQty(producto.id, cantidad);
+    if (cantidad) setCartQty(producto.id, cantidad);
   }
 }
 
-// -------------------------------------------------------------
-// 🔍 Extraer número del texto
-// -------------------------------------------------------------
-function extraerNumero(msg: string): number | null {
-  const match = msg.match(/\b\d+\b/);
+// ============================================================
+// 🔢 Extraer número del mensaje
+// ============================================================
+function extraerNumero(texto: string): number | null {
+  const match = texto.match(/\b\d+\b/);
   return match ? parseInt(match[0]) : null;
 }
 
-// -------------------------------------------------------------
-// 🔎 Buscar producto real dentro del catálogo
-// -------------------------------------------------------------
-async function buscarProducto(msg: string) {
-  const { data } = await supabase.from("z_productos").select("*");
-  if (!data) return null;
-
-  const texto = msg.toLowerCase();
-
+// ============================================================
+// 🔍 Match de producto real
+// ============================================================
+function buscarProducto(texto: string, productos: any[]) {
   return (
-    data.find((p) => texto.includes(p.nombre.toLowerCase())) ||
-    data.find((p) =>
-      (p.marca || "").toLowerCase() &&
-      texto.includes((p.marca || "").toLowerCase())
+    productos.find((p) =>
+      texto.includes(p.nombre.toLowerCase())
     ) ||
-    data.find((p) =>
-      (p.categoria || "").toLowerCase() &&
-      texto.includes((p.categoria || "").toLowerCase())
+    productos.find(
+      (p) =>
+        p.marca &&
+        texto.includes(p.marca.toLowerCase())
+    ) ||
+    productos.find(
+      (p) =>
+        p.categoria &&
+        texto.includes(p.categoria.toLowerCase())
     ) ||
     null
   );
