@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
-import { useProductModal } from "../../context/ProductModalContext"; // ⭐ NECESARIO
+import { useProductModal } from "../../context/ProductModalContext";
 
 interface Producto {
   id: string;
@@ -22,8 +22,7 @@ const PromosB2B: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
-
-  const { openProduct } = useProductModal(); // ⭐ PARA ABRIR EL MODAL
+  const { openProduct } = useProductModal();
 
   useEffect(() => {
     cargarPromos();
@@ -70,7 +69,8 @@ const PromosB2B: React.FC = () => {
 
   const agregarUno = (id: string, stock?: number) => {
     const actual = carrito[id] || 0;
-    const nueva = stock && stock > 0 ? Math.min(actual + 1, stock) : actual + 1;
+    const nueva =
+      stock && stock > 0 ? Math.min(actual + 1, stock) : actual + 1;
     cambiarCantidad(id, nueva, stock);
   };
 
@@ -82,7 +82,6 @@ const PromosB2B: React.FC = () => {
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
           {/* LISTA DE PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
@@ -100,13 +99,11 @@ const PromosB2B: React.FC = () => {
                       key={p.id}
                       className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                     >
-
-                      {/* ZONA CLICKEABLE PARA ABRIR EL MODAL */}
+                      {/* ZONA CLICKEABLE (MODAL PRODUCTO) */}
                       <div
                         className="cursor-pointer"
-                        onClick={() => openProduct(p)}   // ⭐ ABRE MODAL
+                        onClick={() => openProduct(p)}
                       >
-                        {/* Imagen */}
                         <div className="h-52 bg-gray-50 flex items-center justify-center">
                           {p.imagen_url ? (
                             <img
@@ -121,7 +118,6 @@ const PromosB2B: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Info */}
                         <div className="p-4">
                           <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-md">
                             PROMO
@@ -148,25 +144,30 @@ const PromosB2B: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* CONTROLES DEL CARRITO */}
-                      <div className="p-4 pt-0 mt-auto" onClick={(e) => e.stopPropagation()}>
+                      {/* CONTROLES CARRITO */}
+                      <div
+                        className="p-4 pt-0 mt-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {qty === 0 ? (
                           <button
                             disabled={p.stock <= 0}
                             onClick={() => agregarUno(p.id, p.stock)}
                             className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow w-full
-                                ${
-                                  p.stock <= 0
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    : "bg-red-600 text-white hover:bg-red-700"
-                                }`}
+                              ${
+                                p.stock <= 0
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-red-600 text-white hover:bg-red-700"
+                              }`}
                           >
                             Agregar
                           </button>
                         ) : (
                           <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm w-full justify-center">
                             <button
-                              onClick={() => cambiarCantidad(p.id, qty - 1, p.stock)}
+                              onClick={() =>
+                                cambiarCantidad(p.id, qty - 1, p.stock)
+                              }
                               className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
                             >
                               −
@@ -177,7 +178,11 @@ const PromosB2B: React.FC = () => {
                               value={qty}
                               min={0}
                               onChange={(e) =>
-                                cambiarCantidad(p.id, Number(e.target.value), p.stock)
+                                cambiarCantidad(
+                                  p.id,
+                                  Number(e.target.value),
+                                  p.stock
+                                )
                               }
                               className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
                             />
@@ -203,7 +208,7 @@ const PromosB2B: React.FC = () => {
             )}
           </div>
 
-          {/* PANEL LATERAL DEL CARRITO */}
+          {/* PANEL LATERAL */}
           <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
@@ -215,7 +220,7 @@ const PromosB2B: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DE NAVEGACIÓN */}
+      {/* MODAL ¿QUERÉS ALGO MÁS? */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
@@ -227,27 +232,26 @@ const PromosB2B: React.FC = () => {
               Podés seguir navegando o finalizar tu compra.
             </p>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
+              {/* BOTÓN PRINCIPAL */}
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  navigate("/b2b/catalogo");
-                }}
-                className="w-full py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+                onClick={() => setShowModal(false)}
+                className="w-full py-4 rounded-xl bg-red-600 text-white text-base font-bold hover:bg-red-700 transition shadow-md"
               >
-                Ver catálogo
+                Seguir aprovechando ofertas online
               </button>
 
+              {/* BOTÓN SECUNDARIO */}
               <button
                 onClick={() => navigate("/b2b/carrito")}
-                className="w-full py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                className="w-full py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition"
               >
                 Ir al carrito final
               </button>
 
               <button
                 onClick={() => setShowModal(false)}
-                className="text-sm text-gray-400 hover:text-gray-600 mt-2"
+                className="text-sm text-gray-400 hover:text-gray-600 mt-1"
               >
                 Cancelar
               </button>
