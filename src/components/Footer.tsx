@@ -10,15 +10,15 @@ const Footer = () => {
         </p>
 
         <p className="text-xs">
-          Dirección: Av. Industria 1520, Parque Empresarial Córdoba
+          Dirección: Elpidio Gonzalez 1100,  Villa Allende CP5105
         </p>
 
         <p className="text-xs">
-          Teléfono: (0351) 482-9000  
+          Teléfono: (351) 809-9099  
         </p>
 
         <p className="text-xs">
-          CUIT: 30-70908740-9
+          CUIT: vafood - 30-71560964-5
         </p>
 
         <p className="text-[10px] mt-2 text-gray-500">
