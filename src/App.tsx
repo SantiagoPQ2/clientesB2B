@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation,
 } from "react-router-dom";
 
 import Navigation from "./components/Navigation";
@@ -23,18 +22,11 @@ import PedidosB2B from "./pages/b2b/Pedidos";
 // Extras
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import Info from "./pages/Info"; // ⭐ AGREGADO
-
-// ChatBot
-import ChatBubble from "./components/ChatBubble";
-import ChatBot from "./components/ChatBot";
+import Info from "./pages/Info";
 
 function ProtectedApp() {
   const { user } = useAuth();
   const hasUpdate = useVersionChecker(60000);
-  const location = useLocation();
-
-  const [openChat, setOpenChat] = useState(false);
 
   if (!user) return <Login />;
 
@@ -62,11 +54,6 @@ function ProtectedApp() {
     );
   }
 
-  const showChatBot =
-    location.pathname.startsWith("/b2b") ||
-    location.pathname === "/" ||
-    location.pathname === "/info";
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
 
@@ -84,15 +71,6 @@ function ProtectedApp() {
       {/* UPDATE BANNER */}
       {hasUpdate && (
         <UpdateBanner onReload={() => window.location.reload()} />
-      )}
-
-      {/* CHATBOT */}
-      {showChatBot && !openChat && (
-        <ChatBubble onOpen={() => setOpenChat(true)} />
-      )}
-
-      {showChatBot && openChat && (
-        <ChatBot onClose={() => setOpenChat(false)} />
       )}
     </div>
   );
