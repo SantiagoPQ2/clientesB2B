@@ -82,7 +82,6 @@ const PromosB2B: React.FC = () => {
     <div className="w-full">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* LISTA DE PROMOS */}
           <div className="lg:col-span-3">
             {promos.length === 0 ? (
               <div className="bg-white p-8 rounded-xl shadow text-center text-gray-500">
@@ -99,7 +98,6 @@ const PromosB2B: React.FC = () => {
                       key={p.id}
                       className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                     >
-                      {/* ZONA CLICKEABLE (MODAL PRODUCTO) */}
                       <div
                         className="cursor-pointer"
                         onClick={() => openProduct(p)}
@@ -144,7 +142,6 @@ const PromosB2B: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* CONTROLES CARRITO */}
                       <div
                         className="p-4 pt-0 mt-auto"
                         onClick={(e) => e.stopPropagation()}
@@ -153,12 +150,11 @@ const PromosB2B: React.FC = () => {
                           <button
                             disabled={p.stock <= 0}
                             onClick={() => agregarUno(p.id, p.stock)}
-                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow w-full
-                              ${
-                                p.stock <= 0
-                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                  : "bg-red-600 text-white hover:bg-red-700"
-                              }`}
+                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow w-full ${
+                              p.stock <= 0
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : "bg-red-600 text-white hover:bg-red-700"
+                            }`}
                           >
                             Agregar
                           </button>
@@ -208,7 +204,6 @@ const PromosB2B: React.FC = () => {
             )}
           </div>
 
-          {/* PANEL LATERAL */}
           <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
             <CarritoSidePanel
               carrito={carrito}
@@ -220,7 +215,6 @@ const PromosB2B: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL ¿QUERÉS ALGO MÁS? */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
@@ -233,15 +227,16 @@ const PromosB2B: React.FC = () => {
             </p>
 
             <div className="flex flex-col gap-4">
-              {/* BOTÓN PRINCIPAL */}
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  navigate("/b2b/catalogo");
+                }}
                 className="w-full py-4 rounded-xl bg-red-600 text-white text-base font-bold hover:bg-red-700 transition shadow-md"
               >
-                Seguir aprovechando ofertas online
+                Seguir aprovechando ofertas online (12% en todos los productos)
               </button>
 
-              {/* BOTÓN SECUNDARIO */}
               <button
                 onClick={() => navigate("/b2b/carrito")}
                 className="w-full py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition"
