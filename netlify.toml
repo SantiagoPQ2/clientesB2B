@@ -3,43 +3,53 @@
 #############################################
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = "dist"
+  functions = "netlify/functions"
 
 #############################################
-# 🚫 DESACTIVAR EL ESCANEO QUE FRENA EL DEPLOY
+# ⚙️ FUNCTIONS
 #############################################
-[build.environment]
-  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
-  # Si querés ir más suave, podés usar esto:
-  # SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "true"
-
-#############################################
-# ⚙️ FUNCTIONS SETTINGS
-#############################################
-# La función Python usa runtime 3.11
 [functions."procesar_planilla"]
   runtime = "python3.11"
 
-# (Opcional) más recursos para PDFs pesados
 [functions.settings]
   timeout = 50
   memory = 1024
 
 #############################################
-# 🚫 CACHE HEADERS (tus originales)
+# 🔒 SECRETS SCANNING
+#############################################
+[build.environment]
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+
+#############################################
+# 🚫 HTML – NUNCA CACHEAR
 #############################################
 [[headers]]
-  for = "/*"
+  for = "/*.html"
   [headers.values]
-  Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
+#############################################
+# 🚫 SERVICE WORKER – SI EXISTE
+#############################################
 [[headers]]
   for = "/sw.js"
   [headers.values]
-  Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
 
+#############################################
+# 📦 ASSETS VERSIONADOS
+#############################################
 [[headers]]
   for = "/assets/*"
   [headers.values]
-  Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+#############################################
+# 🚫 MANIFEST
+#############################################
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
