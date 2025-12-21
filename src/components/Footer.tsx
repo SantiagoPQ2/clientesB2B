@@ -14,7 +14,7 @@ const Footer = () => {
         </p>
 
         <p className="text-xs">
-          Teléfono: (351) 809-9099  
+          Teléfono: (351) 809-4099  
         </p>
 
         <p className="text-xs">
