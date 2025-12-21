@@ -35,7 +35,7 @@ const Info: React.FC = () => {
       <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-2">Contacto</h2>
       <p className="text-gray-700 leading-relaxed">
         📍 Dirección: Elpidio Gonzalez 1100, Villa Allende CP5105<br />
-        ☎️ Teléfono: (351) 809-9099<br />
+        ☎️ Teléfono: (351) 809-4099<br />
         🧾 CUIT: 30-71560964-5<br />
         ✉️ Email: comercial@vafood.com.ar
       </p>
