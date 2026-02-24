@@ -3,6 +3,7 @@ import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
 import { useProductModal } from "../../context/ProductModalContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface Producto {
   id: string;
@@ -17,6 +18,7 @@ interface Producto {
 }
 
 const PromosB2B: React.FC = () => {
+  const { user } = useAuth();
   const [promos, setPromos] = useState<Producto[]>([]);
   const [carrito, setCarrito] = useState<Record<string, number>>({});
   const [showModal, setShowModal] = useState(false);
@@ -25,9 +27,12 @@ const PromosB2B: React.FC = () => {
   const { openProduct } = useProductModal();
 
   useEffect(() => {
-    cargarPromos();
     cargarCarrito();
   }, []);
+
+  useEffect(() => {
+    cargarPromos();
+  }, [user?.catalogo]);
 
   const cargarCarrito = () => {
     const data = localStorage.getItem("carrito_b2b");
@@ -40,9 +45,18 @@ const PromosB2B: React.FC = () => {
   };
 
   const cargarPromos = async () => {
+    const catalogoCliente = String(user?.catalogo || "").toUpperCase().trim();
+
+    if (!catalogoCliente) {
+      setPromos([]);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("z_productos")
       .select("*")
+      .eq("catalogo", catalogoCliente)
+      .gte("stock", 50)
       .not("combo", "is", null)
       .ilike("combo", "%combo%");
 
@@ -121,75 +135,57 @@ const PromosB2B: React.FC = () => {
                             PROMO
                           </span>
 
-                          <h3 className="text-sm font-bold text-gray-900 mt-2 line-clamp-2">
+                          <p className="mt-2 text-sm font-bold text-gray-900 line-clamp-2">
                             {p.nombre}
-                          </h3>
-
-                          <p className="text-xs text-gray-500 mt-1 mb-4">
-                            {p.marca} • {p.categoria}
                           </p>
 
-                          <p className="text-[10px] text-gray-400 uppercase">
-                            Precio promo
+                          <p className="text-xs text-gray-500">
+                            Código: {p.articulo}
                           </p>
-                          <p className="text-xl font-bold text-red-600">
-                            $
-                            {(p.precio ?? 0).toLocaleString("es-AR", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </p>
+
+                          <div className="mt-2 flex items-center justify-between">
+                            <p className="text-sm font-extrabold text-gray-900">
+                              $
+                              {Number(p.precio || 0).toLocaleString("es-AR")}
+                            </p>
+
+                            <p className="text-[11px] text-gray-500">
+                              Stock: {p.stock}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      <div
-                        className="p-4 pt-0 mt-auto"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {qty === 0 ? (
+                      <div className="p-4 pt-0 mt-auto">
+                        {qty <= 0 ? (
                           <button
-                            disabled={p.stock <= 0}
                             onClick={() => agregarUno(p.id, p.stock)}
-                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition shadow w-full ${
-                              p.stock <= 0
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
+                            className="w-full bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
                           >
                             Agregar
                           </button>
                         ) : (
-                          <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm w-full justify-center">
+                          <div className="flex items-center justify-between gap-2">
                             <button
                               onClick={() =>
                                 cambiarCantidad(p.id, qty - 1, p.stock)
                               }
-                              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+                              className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-800"
                             >
-                              −
+                              -
                             </button>
 
-                            <input
-                              type="number"
-                              value={qty}
-                              min={0}
-                              onChange={(e) =>
-                                cambiarCantidad(
-                                  p.id,
-                                  Number(e.target.value),
-                                  p.stock
-                                )
-                              }
-                              className="w-12 text-center text-sm font-semibold border-x border-gray-200 focus:outline-none"
-                            />
+                            <div className="text-sm font-bold text-gray-900">
+                              {qty}
+                            </div>
 
                             <button
-                              disabled={maxed}
                               onClick={() => agregarUno(p.id, p.stock)}
-                              className={`px-3 py-1.5 text-sm ${
+                              disabled={maxed}
+                              className={`w-10 h-10 rounded-lg font-bold ${
                                 maxed
-                                  ? "text-gray-300 cursor-not-allowed"
-                                  : "text-gray-600 hover:bg-gray-100"
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-gray-900 hover:bg-black text-white"
                               }`}
                             >
                               +
@@ -204,51 +200,39 @@ const PromosB2B: React.FC = () => {
             )}
           </div>
 
-          <div className="lg:col-span-1 lg:pl-4 xl:pl-10">
-            <CarritoSidePanel
-              carrito={carrito}
-              secondaryLabel="Ver catálogo"
-              secondaryPath="/b2b/catalogo"
-              onPrimaryClick={handleVerCarritoFinal}
-            />
-          </div>
+          <CarritoSidePanel
+            carrito={carrito}
+            secondaryLabel="Ir al catálogo"
+            secondaryPath="/b2b/catalogo"
+            primaryLabel="Ver carrito final"
+            onPrimaryClick={handleVerCarritoFinal}
+          />
         </div>
       </div>
 
+      {/* Modal simple para ir al carrito */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md animate-fadeIn">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
-              ¿Querés algo más?
-            </h2>
-
-            <p className="text-gray-500 text-center mb-6">
-              Podés seguir navegando o finalizar tu compra.
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[92%] max-w-md">
+            <h3 className="text-lg font-bold text-gray-900">
+              ¿Querés finalizar tu pedido?
+            </h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Te llevamos al carrito final para revisar cantidades y confirmar.
             </p>
 
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  navigate("/b2b/catalogo");
-                }}
-                className="w-full py-4 rounded-xl bg-red-600 text-white text-base font-bold hover:bg-red-700 transition shadow-md"
-              >
-                Seguir aprovechando ofertas online (12% en todos los productos)
-              </button>
-
-              <button
-                onClick={() => navigate("/b2b/carrito")}
-                className="w-full py-2.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition"
-              >
-                Ir al carrito final
-              </button>
-
+            <div className="flex gap-2 mt-5">
               <button
                 onClick={() => setShowModal(false)}
-                className="text-sm text-gray-400 hover:text-gray-600 mt-1"
+                className="flex-1 border rounded-lg py-2 text-sm font-semibold"
               >
-                Cancelar
+                Seguir comprando
+              </button>
+              <button
+                onClick={() => navigate("/b2b/carrito")}
+                className="flex-1 bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
+              >
+                Ir al carrito
               </button>
             </div>
           </div>
