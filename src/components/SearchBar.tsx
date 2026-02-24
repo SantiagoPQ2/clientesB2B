@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../config/supabase";
 import { useNavigate } from "react-router-dom";
 import { useProductModal } from "../context/ProductModalContext";
+import { useAuth } from "../context/AuthContext";
 import { Search } from "lucide-react";
 
 const SearchBar = () => {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [resultados, setResultados] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -12,12 +14,25 @@ const SearchBar = () => {
   const navigate = useNavigate();
   const { openProductFromSearch } = useProductModal();
 
-  // Cargar productos
+  // Cargar productos (FILTRADOS por catalogo y stock)
   useEffect(() => {
-    supabase.from("z_productos").select("*").then(({ data }) => {
-      setProductos(data || []);
-    });
-  }, []);
+    const catalogoCliente = String(user?.catalogo || "").toUpperCase().trim();
+
+    if (!catalogoCliente) {
+      setProductos([]);
+      return;
+    }
+
+    supabase
+      .from("z_productos")
+      .select("*")
+      .eq("activo", true)
+      .eq("catalogo", catalogoCliente)
+      .gte("stock", 50)
+      .then(({ data }) => {
+        setProductos(data || []);
+      });
+  }, [user?.catalogo]);
 
   // Filtrar
   useEffect(() => {
@@ -28,10 +43,10 @@ const SearchBar = () => {
     const rutas = [
       { icon: "🛒", nombre: "Carrito", ruta: "/b2b/carrito" },
       { icon: "📦", nombre: "Pedidos", ruta: "/b2b/pedidos" },
-      { icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" }
-    ].filter(i => i.nombre.toLowerCase().includes(q));
+      { icon: "📙", nombre: "Catálogo", ruta: "/b2b/catalogo" },
+    ].filter((i) => i.nombre.toLowerCase().includes(q));
 
-    const prods = productos.filter(p => {
+    const prods = productos.filter((p) => {
       const n = p.nombre?.toLowerCase() || "";
       const a = p.articulo?.toLowerCase() || "";
       const c = p.categoria?.toLowerCase() || "";
@@ -77,7 +92,10 @@ const SearchBar = () => {
               {item.ruta ? (
                 <span className="text-xl">{item.icon}</span>
               ) : (
-                <img src={item.imagen_url} className="w-10 h-10 object-contain rounded" />
+                <img
+                  src={item.imagen_url}
+                  className="w-10 h-10 object-contain rounded"
+                />
               )}
 
               <div>
@@ -90,7 +108,9 @@ const SearchBar = () => {
           ))}
 
           {query.length > 0 && resultados.length === 0 && (
-            <p className="text-sm p-3 text-gray-500">No se encontraron resultados</p>
+            <p className="text-sm p-3 text-gray-500">
+              No se encontraron resultados
+            </p>
           )}
         </div>
       )}
