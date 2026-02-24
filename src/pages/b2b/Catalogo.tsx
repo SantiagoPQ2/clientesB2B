@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
+import { useAuth } from "../../context/AuthContext";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
 import ProductoModal from "../../components/ProductoModal";
 import { useProductModal } from "../../context/ProductModalContext";
@@ -17,6 +18,7 @@ interface Producto {
 }
 
 const CatalogoB2B: React.FC = () => {
+  const { user } = useAuth();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [filtroMarca, setFiltroMarca] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -33,9 +35,12 @@ const CatalogoB2B: React.FC = () => {
   // CARGA INICIAL
   // =========================
   useEffect(() => {
-    cargarProductos();
     cargarCarrito();
   }, []);
+
+  useEffect(() => {
+    cargarProductos();
+  }, [user?.catalogo]);
 
   const cargarCarrito = () => {
     const data = localStorage.getItem("carrito_b2b");
@@ -48,10 +53,20 @@ const CatalogoB2B: React.FC = () => {
   };
 
   const cargarProductos = async () => {
+    const catalogoCliente = String(user?.catalogo || "").toUpperCase().trim();
+
+    // Si el cliente no tiene catálogo asignado, no mostramos productos
+    if (!catalogoCliente) {
+      setProductos([]);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("z_productos")
       .select("*")
-      .eq("activo", true);
+      .eq("activo", true)
+      .eq("catalogo", catalogoCliente)
+      .gte("stock", 50);
 
     if (error) return console.error(error);
 
@@ -142,181 +157,202 @@ const CatalogoB2B: React.FC = () => {
           {/* ================= CATEGORÍAS ================= */}
           <div className="lg:col-span-3">
             {categoriaActiva === "" && (
-              <div className="grid gap-10 sm:grid-cols-2">
-                {categorias.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCategoriaActiva(c)}
-                    className="h-52 rounded-2xl bg-white shadow-lg border border-gray-100 
-                               flex items-center justify-center text-center px-4 text-2xl 
-                               font-bold hover:shadow-2xl hover:border-red-500 transition"
-                  >
-                    {c}
-                  </button>
-                ))}
+              <div className="bg-white rounded-xl shadow border p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-2">
+                  Catálogo
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  Seleccioná una categoría para ver los productos disponibles.
+                </p>
+
+                {categorias.length === 0 ? (
+                  <div className="text-sm text-gray-500">
+                    No hay productos disponibles para tu catálogo.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {categorias.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setCategoriaActiva(c);
+                          setFiltroMarca("");
+                          setBusqueda("");
+                        }}
+                        className="p-3 bg-gray-50 hover:bg-gray-100 border rounded-lg text-sm font-semibold text-gray-800 text-left"
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {/* ================= PRODUCTOS ================= */}
             {categoriaActiva !== "" && (
-              <div className="flex flex-col gap-6">
-                {/* FILTROS */}
-                <div className="bg-white shadow-md rounded-xl border p-4 flex flex-col sm:flex-row gap-4">
-                  <input
-                    placeholder="Nombre, código..."
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-lg text-sm"
-                  />
+              <div className="space-y-4">
+                {/* HEADER */}
+                <div className="bg-white rounded-xl shadow border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setCategoriaActiva("");
+                        setFiltroMarca("");
+                        setBusqueda("");
+                      }}
+                      className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                    >
+                      ← Volver
+                    </button>
+                    <h2 className="text-lg font-bold text-gray-900">
+                      {categoriaActiva}
+                    </h2>
+                  </div>
 
-                  <select
-                    value={filtroMarca}
-                    onChange={(e) => setFiltroMarca(e.target.value)}
-                    className="w-40 px-3 py-2 border rounded-lg text-sm bg-white"
-                  >
-                    <option value="">Todas</option>
-                    {marcas.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                    <input
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      placeholder="Buscar por nombre o código..."
+                      className="border rounded-lg px-3 py-2 text-sm w-full sm:w-72"
+                    />
 
-                  <button
-                    onClick={() => {
-                      setCategoriaActiva("");
-                      setFiltroMarca("");
-                      setBusqueda("");
-                    }}
-                    className="text-sm text-red-600 font-semibold"
-                  >
-                    ← Cambiar categoría
-                  </button>
+                    <select
+                      value={filtroMarca}
+                      onChange={(e) => setFiltroMarca(e.target.value)}
+                      className="border rounded-lg px-3 py-2 text-sm w-full sm:w-56"
+                    >
+                      <option value="">Todas las marcas</option>
+                      {marcas.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                {/* GRID */}
-                <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
-                  {filtrados.map((p) => {
-                    const qty = carrito[p.id] || 0;
-                    const maxed = qty >= p.stock;
+                {/* LISTA */}
+                {filtrados.length === 0 ? (
+                  <div className="bg-white rounded-xl shadow border p-6 text-sm text-gray-500">
+                    No hay productos disponibles para los filtros seleccionados.
+                  </div>
+                ) : (
+                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {filtrados.map((p) => {
+                      const qty = carrito[p.id] || 0;
+                      const maxed = p.stock > 0 && qty >= p.stock;
 
-                    return (
-                      <div
-                        key={p.id}
-                        className="bg-white rounded-xl shadow-md border flex flex-col 
-                                   hover:shadow-lg transition cursor-pointer"
-                        onClick={() => setProductoSeleccionado(p)}
-                      >
-                        {/* Imagen */}
-                        <div className="h-44 bg-gray-50 flex items-center justify-center">
-                          {p.imagen_url ? (
-                            <img
-                              src={p.imagen_url}
-                              alt={p.nombre}
-                              className="max-h-full object-contain"
-                            />
-                          ) : (
-                            <div className="text-xs text-gray-400">
-                              Sin imagen
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Contenido */}
-                        <div className="flex-1 flex flex-col p-4">
-                          <h3 className="text-lg font-semibold">
-                            {p.nombre}
-                          </h3>
-                          <p className="text-xs text-gray-500">{p.marca}</p>
-
-                          <div className="mt-auto flex items-center justify-between">
-                            <p className="text-xl font-bold text-red-600">
-                              $
-                              {p.precio.toLocaleString("es-AR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </p>
-
-                            {/* CONTROL CARRITO */}
-                            <div onClick={(e) => e.stopPropagation()}>
-                              {qty === 0 ? (
-                                <button
-                                  disabled={p.stock <= 0}
-                                  onClick={() =>
-                                    agregarUno(p.id, p.stock)
-                                  }
-                                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold"
-                                >
-                                  Agregar
-                                </button>
+                      return (
+                        <div
+                          key={p.id}
+                          className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
+                        >
+                          <div
+                            className="cursor-pointer"
+                            onClick={() => setProductoSeleccionado(p)}
+                          >
+                            <div className="h-52 bg-gray-50 flex items-center justify-center">
+                              {p.imagen_url ? (
+                                <img
+                                  src={p.imagen_url}
+                                  alt={p.nombre}
+                                  className="max-h-full object-contain"
+                                />
                               ) : (
-                                <div className="inline-flex items-center rounded-lg border overflow-hidden">
-                                  <button
-                                    onClick={() =>
-                                      cambiarCantidad(
-                                        p.id,
-                                        qty - 1,
-                                        p.stock
-                                      )
-                                    }
-                                    className="px-3 py-1.5 text-sm"
-                                  >
-                                    −
-                                  </button>
-
-                                  <span className="px-3 text-sm font-semibold">
-                                    {qty}
-                                  </span>
-
-                                  <button
-                                    disabled={maxed}
-                                    onClick={() =>
-                                      agregarUno(p.id, p.stock)
-                                    }
-                                    className={`px-3 py-1.5 text-sm ${
-                                      maxed
-                                        ? "text-gray-300"
-                                        : ""
-                                    }`}
-                                  >
-                                    +
-                                  </button>
+                                <div className="text-gray-400 text-xs text-center px-2">
+                                  Sin imagen <br /> {p.articulo}
                                 </div>
                               )}
                             </div>
+
+                            <div className="p-4">
+                              <p className="text-sm font-bold text-gray-900 line-clamp-2">
+                                {p.nombre}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Código: {p.articulo}
+                              </p>
+
+                              <div className="mt-2 flex items-center justify-between">
+                                <p className="text-sm font-extrabold text-gray-900">
+                                  $
+                                  {Number(p.precio || 0).toLocaleString(
+                                    "es-AR"
+                                  )}
+                                </p>
+                                <p className="text-[11px] text-gray-500">
+                                  Stock: {p.stock}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CONTROLES */}
+                          <div className="p-4 pt-0 mt-auto">
+                            {qty <= 0 ? (
+                              <button
+                                onClick={() => agregarUno(p.id, p.stock)}
+                                className="w-full bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
+                              >
+                                Agregar
+                              </button>
+                            ) : (
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  onClick={() =>
+                                    cambiarCantidad(p.id, qty - 1, p.stock)
+                                  }
+                                  className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-800"
+                                >
+                                  -
+                                </button>
+
+                                <div className="text-sm font-bold text-gray-900">
+                                  {qty}
+                                </div>
+
+                                <button
+                                  onClick={() => agregarUno(p.id, p.stock)}
+                                  disabled={maxed}
+                                  className={`w-10 h-10 rounded-lg font-bold ${
+                                    maxed
+                                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                      : "bg-gray-900 hover:bg-black text-white"
+                                  }`}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* ================= CARRITO ================= */}
-          <div className="lg:col-span-1 lg:pl-6">
-            <CarritoSidePanel
-              carrito={carrito}
-              secondaryLabel="Ver promociones"
-              secondaryPath="/"
-            />
-          </div>
+          {/* ================= CARRITO LATERAL ================= */}
+          <CarritoSidePanel
+            carrito={carrito}
+            secondaryLabel="Ver promociones"
+            secondaryPath="/"
+          />
         </div>
       </div>
 
-      {/* ================= MODAL ================= */}
+      {/* MODAL PRODUCTO */}
       {productoSeleccionado && (
         <ProductoModal
           producto={productoSeleccionado}
-          cantidadInicial={carrito[productoSeleccionado.id] || 0}
           onClose={() => setProductoSeleccionado(null)}
-          onConfirm={(cantidad) =>
-            guardarCarrito({
-              ...carrito,
-              [productoSeleccionado.id]: cantidad,
-            })
-          }
+          carrito={carrito}
+          cambiarCantidad={cambiarCantidad}
+          agregarUno={agregarUno}
         />
       )}
     </div>
