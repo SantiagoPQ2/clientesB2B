@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../config/supabase";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import ChatBot from "./ChatBot";
 
 interface Producto {
@@ -30,23 +29,12 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   primaryLabel = "Ver carrito final",
   onPrimaryClick,
 }) => {
-  const { user } = useAuth();
   const [productos, setProductos] = useState<Producto[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const cargarProductosCarrito = async () => {
-      const catalogoCliente = String(user?.catalogo || "")
-        .toUpperCase()
-        .trim();
-
       const ids = Object.keys(carrito).filter(Boolean);
-
-      if (!catalogoCliente) {
-        setProductos([]);
-        return;
-      }
-
       if (ids.length === 0) {
         setProductos([]);
         return;
@@ -55,9 +43,6 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
       const { data, error } = await supabase
         .from("z_productos")
         .select("*")
-        .eq("activo", true)
-        .eq("catalogo", catalogoCliente)
-        .gte("stock", 50)
         .in("id", ids);
 
       if (error) {
@@ -70,7 +55,7 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
     };
 
     cargarProductosCarrito();
-  }, [carrito, user?.catalogo]);
+  }, [carrito]);
 
   const totalItems = Object.values(carrito).reduce(
     (acc, v) => acc + (v || 0),
@@ -83,11 +68,8 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   }, 0);
 
   const handlePrimary = () => {
-    if (onPrimaryClick) {
-      onPrimaryClick();
-    } else {
-      navigate("/b2b/carrito");
-    }
+    if (onPrimaryClick) onPrimaryClick();
+    else navigate("/b2b/carrito");
   };
 
   const handleSecondary = () => {
@@ -97,19 +79,23 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
   return (
     <div className="w-full lg:w-[400px] xl:w-[430px] space-y-4 lg:sticky lg:top-20">
       {/* ================= CARRITO ================= */}
-      <div className="bg-white rounded-xl shadow-md border p-4">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">
-          Tu carrito
-        </h3>
-        <p className="text-xs text-gray-500 mb-3">
+      <div className="bg-white rounded-2xl vafood-shadow border border-gray-100 p-4 animate-fadeIn">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-gray-900">Tu carrito</h3>
+          <div className="text-[11px] px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 font-bold">
+            {totalItems} ítem{totalItems === 1 ? "" : "s"}
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-500 mt-1 mb-3">
           {totalItems === 0
             ? "Aún no agregaste productos."
-            : `Tenés ${totalItems} ítem${totalItems > 1 ? "s" : ""} en el carrito.`}
+            : "Revisá cantidades y finalizá cuando quieras."}
         </p>
 
-        <div className="max-h-56 overflow-y-auto mb-3 border rounded-lg">
+        <div className="max-h-56 overflow-y-auto mb-3 border border-gray-100 rounded-xl">
           {totalItems === 0 ? (
-            <div className="text-xs text-gray-400 text-center py-4">
+            <div className="text-xs text-gray-400 text-center py-5">
               Agregá productos o promociones para verlos acá.
             </div>
           ) : (
@@ -127,19 +113,17 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
                         <p className="font-semibold text-gray-800 line-clamp-2">
                           {p.nombre}
                         </p>
-                        <p className="text-[10px] text-gray-500">
+                        <p className="text-[11px] text-gray-500">
                           {p.articulo} · x{qty}
                         </p>
                       </div>
-
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">
-                          $
-                          {subtotal.toLocaleString("es-AR", {
-                            minimumFractionDigits: 0,
-                          })}
-                        </p>
-                      </div>
+                      <p className="font-semibold text-gray-900">
+                        $
+                        {subtotal.toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
                     </div>
                   </li>
                 );
@@ -148,31 +132,45 @@ const CarritoSidePanel: React.FC<CarritoSidePanelProps> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-gray-700">Total</p>
-          <p className="text-sm font-extrabold text-gray-900">
-            ${total.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-          </p>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-600 font-semibold">Total</span>
+          <span className="text-lg font-extrabold text-red-600">
+            $
+            {total.toLocaleString("es-AR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="mt-3 flex flex-col gap-2">
+          <button
+            onClick={handlePrimary}
+            disabled={totalItems === 0}
+            className={`w-full px-4 py-2 rounded-xl text-sm font-extrabold shadow-sm transition
+              ${
+                totalItems === 0
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "vafood-gradient hover:opacity-[0.96] text-white"
+              }`}
+          >
+            {primaryLabel}
+          </button>
+
           <button
             onClick={handleSecondary}
-            className="flex-1 border rounded-lg py-2 text-sm font-semibold"
+            className="w-full px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
           >
             {secondaryLabel}
           </button>
 
-          <button
-            onClick={handlePrimary}
-            className="flex-1 bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
-          >
-            {primaryLabel}
-          </button>
+          <div className="mt-1 text-[11px] text-gray-500">
+            Comprando online tenés <b className="text-red-600">12% OFF</b>.
+          </div>
         </div>
       </div>
 
-      {/* ================= CHAT BOT ================= */}
+      {/* ================= CHAT IA ================= */}
       <ChatBot />
     </div>
   );
