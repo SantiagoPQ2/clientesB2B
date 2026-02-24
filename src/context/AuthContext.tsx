@@ -6,6 +6,7 @@ type User = {
   username: string;
   role: "admin" | "cliente";
   name?: string;
+  catalogo?: string | null;
 } | null;
 
 type AuthContextType = {
@@ -35,10 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data) return false;
 
     const u = {
-      id: data.id,           // UUID
+      id: data.id, // UUID
       username: data.username, // EL CÓDIGO DEL CLIENTE (ej: 8885)
       role: data.role,
       name: data.name ?? "",
+      catalogo: data.catalogo ?? null,
     };
 
     setUser(u);
