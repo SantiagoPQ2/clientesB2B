@@ -17,7 +17,7 @@ interface Producto {
 const MINIMO_COMPRA = 20000;
 
 const CarritoB2B: React.FC = () => {
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const [carrito, setCarrito] = useState<Record<string, number>>({});
   const [productos, setProductos] = useState<Producto[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -33,7 +33,7 @@ const CarritoB2B: React.FC = () => {
 
   useEffect(() => {
     cargarProductos();
-  }, [carrito]);
+  }, [carrito, user?.catalogo]);
 
   const guardarCarrito = (nuevo: Record<string, number>) => {
     setCarrito(nuevo);
@@ -41,15 +41,55 @@ const CarritoB2B: React.FC = () => {
   };
 
   const cargarProductos = async () => {
-    const ids = Object.keys(carrito);
-    if (ids.length === 0) return setProductos([]);
+    const ids = Object.keys(carrito).filter(Boolean);
+    if (ids.length === 0) {
+      setProductos([]);
+      return;
+    }
 
-    const { data } = await supabase
+    const catalogoCliente = String(user?.catalogo || "").toUpperCase().trim();
+
+    // Si el cliente no tiene catálogo asignado, no mostramos productos
+    if (!catalogoCliente) {
+      setProductos([]);
+      return;
+    }
+
+    const { data, error } = await supabase
       .from("z_productos")
       .select("*")
+      .eq("activo", true)
+      .eq("catalogo", catalogoCliente)
+      .gte("stock", 50)
       .in("id", ids);
 
-    setProductos((data as Producto[]) || []);
+    if (error) {
+      console.error("Error cargando productos del carrito:", error);
+      setProductos([]);
+      return;
+    }
+
+    const prods = (data as Producto[]) || [];
+    setProductos(prods);
+
+    // Limpieza: si había productos en el carrito que ya no pertenecen al catálogo
+    // del cliente o quedaron con stock < 50, los removemos del carrito.
+    const idsOk = new Set(prods.map((p) => p.id));
+    const faltantes = ids.filter((id) => !idsOk.has(id));
+
+    if (faltantes.length > 0) {
+      const copia = { ...carrito };
+      let changed = false;
+
+      for (const id of faltantes) {
+        if (id in copia) {
+          delete copia[id];
+          changed = true;
+        }
+      }
+
+      if (changed) guardarCarrito(copia);
+    }
   };
 
   const precioConDescuento = (p: Producto) => {
@@ -114,12 +154,10 @@ const CarritoB2B: React.FC = () => {
       if (!cumpleMinimo) return;
       if (!user) return;
 
-      // ⭐ CORRECCIÓN CRÍTICA:
-      // Guardamos UUID real + username para mostrar luego
       const { data: pedido, error } = await supabase
         .from("z_pedidos")
         .insert({
-          cliente_id: user.id,          // UUID correcto
+          cliente_id: user.id, // UUID correcto
           cliente_username: user.username, // Para pedidos
           created_by: "b2b-web",
           estado: "pendiente",
@@ -144,8 +182,8 @@ const CarritoB2B: React.FC = () => {
           producto_id: p.id,
           articulo: p.articulo,
           nombre: p.nombre,
+          precio: precioConDescuento(p),
           cantidad: qty,
-          precio_unitario: precioConDescuento(p),
           subtotal: precioConDescuento(p) * qty,
         });
       }
@@ -154,93 +192,110 @@ const CarritoB2B: React.FC = () => {
       setCarrito({});
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-    } catch (err) {
-      console.error("ERROR INESPERADO:", err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   return (
     <div className="w-full">
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-6 space-y-4">
+        <div className="bg-white rounded-xl border shadow p-4">
+          <h2 className="text-xl font-bold text-gray-900">Carrito</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Revisá tus productos antes de confirmar el pedido.
+          </p>
+        </div>
 
         {productos.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
-            Tu carrito está vacío.
+          <div className="bg-white rounded-xl border shadow p-8 text-center text-gray-500">
+            Tu carrito está vacío (o algunos productos ya no están disponibles
+            para tu catálogo / stock mínimo).
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* LISTA DE PRODUCTOS */}
-            <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-100">
-              <div className="border-b px-4 py-3 text-sm text-gray-500 flex justify-between">
-                <span>Productos ({totalItems})</span>
-                <span>Total</span>
-              </div>
-
-              <div className="divide-y divide-gray-100">
+            {/* LISTA */}
+            <div className="lg:col-span-2 bg-white rounded-xl border shadow p-4">
+              <div className="space-y-4">
                 {productos.map((p) => {
                   const qty = carrito[p.id] || 0;
-                  const totalArticulo = precioConDescuento(p) * qty;
-                  const totalDescuentoArticulo = descuentoPorUnidad(p) * qty;
+                  if (!qty) return null;
+
+                  const precioDesc = precioConDescuento(p);
+                  const descU = descuentoPorUnidad(p);
 
                   return (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <div
+                      key={p.id}
+                      className="border rounded-xl p-3 flex gap-3"
+                    >
+                      <div className="w-20 h-20 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
                         {p.imagen_url ? (
-                          <img src={p.imagen_url} className="max-h-full object-contain" />
+                          <img
+                            src={p.imagen_url}
+                            alt={p.nombre}
+                            className="max-h-full object-contain"
+                          />
                         ) : (
-                          <span className="text-[10px] text-gray-400">{p.articulo}</span>
+                          <div className="text-[10px] text-gray-400 text-center px-1">
+                            Sin imagen
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-gray-900">
+                          {p.nombre}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {p.articulo} · Stock: {p.stock}
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="font-semibold">{p.nombre}</p>
-
-                            {(!p.categoria || p.categoria.trim() === "") ? (
-                              <p className="text-xs text-red-600 font-semibold">PROMO</p>
-                            ) : (
-                              <p className="text-xs text-gray-500">{p.marca} • {p.categoria}</p>
-                            )}
-                          </div>
-
-                          <div className="text-right">
-                            <p className="font-semibold text-red-600">
-                              ${totalArticulo.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                            <p className="text-sm font-extrabold text-gray-900">
+                              $
+                              {precioDesc.toLocaleString("es-AR", {
+                                minimumFractionDigits: 0,
+                              })}
+                              <span className="text-xs font-semibold text-gray-400 line-through ml-2">
+                                $
+                                {p.precio.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 0,
+                                })}
+                              </span>
                             </p>
 
-                            {totalDescuentoArticulo > 0 && (
-                              <p className="text-xs text-green-600">
-                                - ${totalDescuentoArticulo.toLocaleString("es-AR")}
+                            {descU > 0 && (
+                              <p className="text-[11px] text-green-700 font-semibold">
+                                Ahorrás $
+                                {descU.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 0,
+                                })}{" "}
+                                por unidad
                               </p>
                             )}
                           </div>
-                        </div>
 
-                        {/* CANTIDAD */}
-                        <div className="flex justify-between mt-3">
-                          <div className="flex items-center border rounded-lg overflow-hidden">
-                            <button className="px-3 py-1" onClick={() => cambiarCantidad(p.id, qty - 1)}>
-                              −
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => cambiarCantidad(p.id, qty - 1)}
+                              className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold"
+                            >
+                              -
                             </button>
-                            <input
-                              type="number"
-                              className="w-14 text-center outline-none"
-                              value={qty}
-                              onChange={(e) => cambiarCantidad(p.id, Number(e.target.value))}
-                            />
-                            <button className="px-3 py-1" onClick={() => cambiarCantidad(p.id, qty + 1)}>
+                            <div className="w-10 text-center font-bold">
+                              {qty}
+                            </div>
+                            <button
+                              onClick={() =>
+                                cambiarCantidad(p.id, Math.min(qty + 1, p.stock))
+                              }
+                              className="w-10 h-10 rounded-lg bg-gray-900 hover:bg-black text-white font-bold"
+                            >
                               +
                             </button>
                           </div>
-
-                          <button
-                            onClick={() => cambiarCantidad(p.id, 0)}
-                            className="text-xs text-gray-400 hover:text-red-600"
-                          >
-                            Eliminar
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -250,124 +305,140 @@ const CarritoB2B: React.FC = () => {
             </div>
 
             {/* RESUMEN */}
-            <div className="bg-white rounded-xl shadow-md border p-5 flex flex-col gap-4 h-fit">
-              <h3 className="text-base font-semibold">Resumen del pedido</h3>
+            <div className="bg-white rounded-xl border shadow p-4 space-y-3">
+              <h3 className="text-base font-bold text-gray-900">Resumen</h3>
 
               <div className="flex justify-between text-sm">
-                <span>Items</span>
+                <span className="text-gray-600">Ítems</span>
                 <span className="font-semibold">{totalItems}</span>
               </div>
 
               <div className="flex justify-between text-sm">
-                <span>Subtotal sin descuento</span>
+                <span className="text-gray-600">Total sin descuento</span>
                 <span className="font-semibold">
                   ${totalSinDescuento.toLocaleString("es-AR")}
                 </span>
               </div>
 
-              <div className="flex justify-between text-sm text-green-700">
-                <span>Descuento aplicado (12%)</span>
-                <span>- ${descuentoReal.toLocaleString("es-AR")}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Descuento (12%)</span>
+                <span className="font-semibold text-green-700">
+                  -${descuentoReal.toLocaleString("es-AR")}
+                </span>
               </div>
 
               <div className="border-t pt-3 flex justify-between">
-                <span className="font-semibold">Total final</span>
-                <span className="text-xl font-bold text-red-600">
+                <span className="text-sm font-bold text-gray-900">
+                  Total final
+                </span>
+                <span className="text-sm font-extrabold text-gray-900">
                   ${totalFinal.toLocaleString("es-AR")}
                 </span>
               </div>
 
-              <p className="text-xs text-gray-600 -mt-2">
-                El pedido será abonado contra entrega acordada con el transportista.
-              </p>
+              <div className="text-xs text-gray-500">
+                Entrega estimada: <b>{fechaEntrega()}</b>
+              </div>
 
               {!cumpleMinimo && (
-                <p className="text-xs text-red-600">
-                  El mínimo de compra es ${MINIMO_COMPRA.toLocaleString("es-AR")}.
-                </p>
+                <div className="text-xs text-red-600 font-semibold">
+                  Mínimo de compra: $
+                  {MINIMO_COMPRA.toLocaleString("es-AR")}. Te faltan $
+                  {(MINIMO_COMPRA - totalFinal).toLocaleString("es-AR")}.
+                </div>
               )}
 
               <button
                 disabled={!cumpleMinimo}
-                onClick={() => cumpleMinimo && setShowConfirmModal(true)}
-                className={`py-2 rounded-lg font-semibold text-white ${
-                  cumpleMinimo ? "bg-red-600 hover:bg-red-700" : "bg-gray-400 cursor-not-allowed"
+                onClick={() => setShowConfirmModal(true)}
+                className={`w-full rounded-lg py-2 text-sm font-semibold ${
+                  cumpleMinimo
+                    ? "bg-gray-900 hover:bg-black text-white"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
               >
                 Confirmar pedido
               </button>
-            </div>
 
+              <button
+                onClick={() => navigate("/b2b/catalogo")}
+                className="w-full border rounded-lg py-2 text-sm font-semibold"
+              >
+                Seguir comprando
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* MODAL CONFIRMAR */}
+      {/* MODAL CONFIRM */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-8 w-[90%] max-w-md">
-
-            <h2 className="text-xl font-semibold text-center">Confirmación de pedido</h2>
-
-            <p className="text-center mt-3 text-gray-600">
-              Total final:{" "}
-              <span className="font-bold text-red-600">
-                ${totalFinal.toLocaleString("es-AR")}
-              </span>
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[92%] max-w-md">
+            <h3 className="text-lg font-bold text-gray-900">
+              Confirmar pedido
+            </h3>
+            <p className="text-sm text-gray-600 mt-2">
+              ¿Querés confirmar el pedido por $
+              {totalFinal.toLocaleString("es-AR")}?
             </p>
 
-            <p className="text-center text-gray-600 mt-2">
-              Entrega estimada: <span className="font-semibold">{fechaEntrega()}</span>
-            </p>
-
-            <p className="text-xs text-gray-600 text-center mt-4">
-              El pedido será abonado contra entrega acordada con el transportista.
-            </p>
-
-            <div className="flex flex-col gap-3 mt-6">
-              <button
-                onClick={confirmarPedidoFinal}
-                className="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
-              >
-                Confirmar pedido
-              </button>
-
+            <div className="flex gap-2 mt-5">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold"
+                className="flex-1 border rounded-lg py-2 text-sm font-semibold"
               >
-                Revisar pedido
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarPedidoFinal}
+                className="flex-1 bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
+              >
+                Confirmar
               </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* MODAL ÉXITO */}
+      {/* MODAL OK */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-10 w-[90%] max-w-md text-center">
-
-            <div className="text-green-600 text-6xl mb-4">✓</div>
-
-            <h2 className="text-2xl font-bold text-gray-800">¡Pedido confirmado!</h2>
-
-            <p className="text-gray-600 mt-2">
-              Tu pedido <span className="font-semibold">#{pedidoID}</span> fue registrado con éxito.
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[92%] max-w-md">
+            <h3 className="text-lg font-bold text-gray-900">¡Listo!</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Tu pedido fue generado correctamente.
+              {pedidoID ? (
+                <>
+                  <br />
+                  ID: <b>{pedidoID}</b>
+                </>
+              ) : null}
             </p>
 
-            <button
-              className="mt-6 bg-red-600 hover:bg-red-700 text-white py-2 w-full rounded-lg font-semibold"
-              onClick={() => navigate("/b2b/pedidos")}
-            >
-              Ver mis pedidos
-            </button>
-
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate("/b2b/pedidos");
+                }}
+                className="flex-1 bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
+              >
+                Ver pedidos
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate("/b2b/catalogo");
+                }}
+                className="flex-1 border rounded-lg py-2 text-sm font-semibold"
+              >
+                Volver al catálogo
+              </button>
+            </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };
