@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../config/supabase";
-import { useAuth } from "../../context/AuthContext";
 import CarritoSidePanel from "../../components/CarritoSidePanel";
 import ProductoModal from "../../components/ProductoModal";
 import { useProductModal } from "../../context/ProductModalContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface Producto {
   id: string;
@@ -15,10 +15,12 @@ interface Producto {
   stock: number;
   imagen_url?: string;
   combo?: string | null;
+  catalogo?: string | null;
 }
 
 const CatalogoB2B: React.FC = () => {
   const { user } = useAuth();
+
   const [productos, setProductos] = useState<Producto[]>([]);
   const [filtroMarca, setFiltroMarca] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -40,6 +42,7 @@ const CatalogoB2B: React.FC = () => {
 
   useEffect(() => {
     cargarProductos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.catalogo]);
 
   const cargarCarrito = () => {
@@ -55,7 +58,7 @@ const CatalogoB2B: React.FC = () => {
   const cargarProductos = async () => {
     const catalogoCliente = String(user?.catalogo || "").toUpperCase().trim();
 
-    // Si el cliente no tiene catálogo asignado, no mostramos productos
+    // Si el cliente no tiene catálogo asignado, no mostramos nada (evita confusión)
     if (!catalogoCliente) {
       setProductos([]);
       return;
@@ -65,7 +68,8 @@ const CatalogoB2B: React.FC = () => {
       .from("z_productos")
       .select("*")
       .eq("activo", true)
-      .eq("catalogo", catalogoCliente)
+      // ilike sin % => case-insensitive exact match
+      .ilike("catalogo", catalogoCliente)
       .gte("stock", 50);
 
     if (error) return console.error(error);
@@ -92,7 +96,7 @@ const CatalogoB2B: React.FC = () => {
     }, 350);
 
     return () => clearTimeout(t);
-  }, [categoriaObjetivo, productoObjetivo]);
+  }, [categoriaObjetivo, productoObjetivo, clearTargets]);
 
   // =========================
   // HELPERS CARRITO
@@ -147,6 +151,13 @@ const CatalogoB2B: React.FC = () => {
               : true)
         );
 
+  const stockBadge = (stock: number) => {
+    // stock < 50 ya no aparece
+    if (stock >= 500) return { txt: "Stock alto", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    if (stock >= 150) return { txt: "En stock", cls: "bg-green-50 text-green-700 border-green-200" };
+    return { txt: "Stock limitado", cls: "bg-amber-50 text-amber-700 border-amber-200" };
+  };
+
   // =========================
   // UI
   // =========================
@@ -157,29 +168,36 @@ const CatalogoB2B: React.FC = () => {
           {/* ================= CATEGORÍAS ================= */}
           <div className="lg:col-span-3">
             {categoriaActiva === "" && (
-              <div className="bg-white rounded-xl shadow border p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-2">
-                  Catálogo
-                </h2>
-                <p className="text-sm text-gray-600 mb-4">
-                  Seleccioná una categoría para ver los productos disponibles.
-                </p>
+              <div className="space-y-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-gray-900">
+                      Elegí una categoría
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Mostramos solo productos de tu catálogo y con stock disponible.
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+                    <span className="inline-block w-2 h-2 rounded-full bg-red-600" />
+                    VaFood B2B
+                  </div>
+                </div>
 
                 {categorias.length === 0 ? (
-                  <div className="text-sm text-gray-500">
+                  <div className="bg-white rounded-2xl border shadow p-6 text-sm text-gray-500">
                     No hay productos disponibles para tu catálogo.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {categorias.map((c) => (
                       <button
                         key={c}
-                        onClick={() => {
-                          setCategoriaActiva(c);
-                          setFiltroMarca("");
-                          setBusqueda("");
-                        }}
-                        className="p-3 bg-gray-50 hover:bg-gray-100 border rounded-lg text-sm font-semibold text-gray-800 text-left"
+                        onClick={() => setCategoriaActiva(c)}
+                        className="h-44 rounded-2xl bg-white vafood-shadow border border-gray-100
+                                   flex items-center justify-center text-center px-4 text-2xl
+                                   font-extrabold hover:shadow-xl hover:border-red-500/60
+                                   transition-all duration-200 hover:-translate-y-0.5 animate-fadeIn"
                       >
                         {c}
                       </button>
@@ -191,135 +209,143 @@ const CatalogoB2B: React.FC = () => {
 
             {/* ================= PRODUCTOS ================= */}
             {categoriaActiva !== "" && (
-              <div className="space-y-4">
-                {/* HEADER */}
-                <div className="bg-white rounded-xl shadow border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setCategoriaActiva("");
-                        setFiltroMarca("");
-                        setBusqueda("");
-                      }}
-                      className="text-sm font-semibold text-gray-600 hover:text-gray-900"
-                    >
-                      ← Volver
-                    </button>
-                    <h2 className="text-lg font-bold text-gray-900">
-                      {categoriaActiva}
-                    </h2>
-                  </div>
+              <div className="flex flex-col gap-6">
+                {/* FILTROS */}
+                <div className="bg-white vafood-shadow rounded-2xl border border-gray-100 p-4 flex flex-col sm:flex-row gap-4 animate-fadeIn">
+                  <input
+                    placeholder="Nombre, código..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-200"
+                  />
 
-                  <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                    <input
-                      value={busqueda}
-                      onChange={(e) => setBusqueda(e.target.value)}
-                      placeholder="Buscar por nombre o código..."
-                      className="border rounded-lg px-3 py-2 text-sm w-full sm:w-72"
-                    />
+                  <select
+                    value={filtroMarca}
+                    onChange={(e) => setFiltroMarca(e.target.value)}
+                    className="w-full sm:w-48 px-3 py-2 border rounded-lg text-sm bg-white"
+                  >
+                    <option value="">Todas</option>
+                    {marcas.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
 
-                    <select
-                      value={filtroMarca}
-                      onChange={(e) => setFiltroMarca(e.target.value)}
-                      className="border rounded-lg px-3 py-2 text-sm w-full sm:w-56"
-                    >
-                      <option value="">Todas las marcas</option>
-                      {marcas.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setCategoriaActiva("");
+                      setFiltroMarca("");
+                      setBusqueda("");
+                    }}
+                    className="text-sm text-red-600 font-semibold hover:text-red-700 transition"
+                  >
+                    ← Cambiar categoría
+                  </button>
                 </div>
 
-                {/* LISTA */}
-                {filtrados.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow border p-6 text-sm text-gray-500">
-                    No hay productos disponibles para los filtros seleccionados.
-                  </div>
-                ) : (
-                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtrados.map((p) => {
-                      const qty = carrito[p.id] || 0;
-                      const maxed = p.stock > 0 && qty >= p.stock;
+                {/* GRID (3 por fila en desktop) */}
+                <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {filtrados.map((p) => {
+                    const qty = carrito[p.id] || 0;
+                    const maxed = qty >= p.stock;
 
-                      return (
-                        <div
-                          key={p.id}
-                          className="bg-white rounded-xl border shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
-                        >
+                    const badge = stockBadge(p.stock);
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="group bg-white rounded-2xl vafood-shadow border border-gray-100 flex flex-col
+                                   hover:shadow-xl hover:border-red-500/50 transition-all duration-200
+                                   hover:-translate-y-0.5 cursor-pointer animate-fadeIn"
+                        onClick={() => setProductoSeleccionado(p)}
+                      >
+                        {/* Imagen */}
+                        <div className="relative h-44 bg-gray-50 flex items-center justify-center overflow-hidden rounded-t-2xl">
+                          {/* Badge */}
                           <div
-                            className="cursor-pointer"
-                            onClick={() => setProductoSeleccionado(p)}
+                            className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full border ${badge.cls}`}
                           >
-                            <div className="h-52 bg-gray-50 flex items-center justify-center">
-                              {p.imagen_url ? (
-                                <img
-                                  src={p.imagen_url}
-                                  alt={p.nombre}
-                                  className="max-h-full object-contain"
-                                />
-                              ) : (
-                                <div className="text-gray-400 text-xs text-center px-2">
-                                  Sin imagen <br /> {p.articulo}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="p-4">
-                              <p className="text-sm font-bold text-gray-900 line-clamp-2">
-                                {p.nombre}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Código: {p.articulo}
-                              </p>
-
-                              <div className="mt-2 flex items-center justify-between">
-                                <p className="text-sm font-extrabold text-gray-900">
-                                  $
-                                  {Number(p.precio || 0).toLocaleString(
-                                    "es-AR"
-                                  )}
-                                </p>
-                                <p className="text-[11px] text-gray-500">
-                                  Stock: {p.stock}
-                                </p>
-                              </div>
-                            </div>
+                            {badge.txt}
                           </div>
 
-                          {/* CONTROLES */}
-                          <div className="p-4 pt-0 mt-auto">
-                            {qty <= 0 ? (
+                          {p.imagen_url ? (
+                            <img
+                              src={p.imagen_url}
+                              alt={p.nombre}
+                              className="max-h-full object-contain transition-transform duration-200 group-hover:scale-[1.04]"
+                            />
+                          ) : (
+                            <div className="text-xs text-gray-400 text-center px-3">
+                              Sin imagen
+                              <div className="mt-1 text-[11px] text-gray-400">
+                                {p.articulo}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Contenido */}
+                        <div className="flex-1 flex flex-col p-4">
+                          <h3 className="text-base font-extrabold text-gray-900 leading-snug line-clamp-2">
+                            {p.nombre}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {p.marca} · Código {p.articulo}
+                          </p>
+
+                          <div className="mt-3 flex items-center justify-between">
+                            <p className="text-xl font-extrabold text-red-600">
+                              $
+                              {p.precio.toLocaleString("es-AR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
+
+                            <p className="text-[11px] text-gray-500">
+                              Stock: <span className="font-semibold">{p.stock}</span>
+                            </p>
+                          </div>
+
+                          {/* CONTROL CARRITO */}
+                          <div
+                            className="mt-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {qty === 0 ? (
                               <button
+                                disabled={p.stock <= 0}
                                 onClick={() => agregarUno(p.id, p.stock)}
-                                className="w-full bg-gray-900 hover:bg-black text-white rounded-lg py-2 text-sm font-semibold"
+                                className={`w-full px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition
+                                  ${p.stock <= 0
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "vafood-gradient hover:opacity-[0.96] text-white"
+                                  }`}
                               >
                                 Agregar
                               </button>
                             ) : (
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="w-full inline-flex items-center justify-between rounded-lg border overflow-hidden">
                                 <button
                                   onClick={() =>
                                     cambiarCantidad(p.id, qty - 1, p.stock)
                                   }
-                                  className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-800"
+                                  className="w-12 py-2 text-sm font-extrabold hover:bg-gray-50 transition"
                                 >
-                                  -
+                                  −
                                 </button>
 
-                                <div className="text-sm font-bold text-gray-900">
+                                <span className="px-3 text-sm font-extrabold text-gray-900">
                                   {qty}
-                                </div>
+                                </span>
 
                                 <button
-                                  onClick={() => agregarUno(p.id, p.stock)}
                                   disabled={maxed}
-                                  className={`w-10 h-10 rounded-lg font-bold ${
+                                  onClick={() => agregarUno(p.id, p.stock)}
+                                  className={`w-12 py-2 text-sm font-extrabold transition ${
                                     maxed
-                                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                      : "bg-gray-900 hover:bg-black text-white"
+                                      ? "text-gray-300 cursor-not-allowed"
+                                      : "hover:bg-red-50 text-red-700"
                                   }`}
                                 >
                                   +
@@ -327,32 +353,50 @@ const CatalogoB2B: React.FC = () => {
                               </div>
                             )}
                           </div>
+
+                          {/* Micro copy motivacional */}
+                          <p className="mt-3 text-[11px] text-gray-500">
+                            Tip: combiná productos y aprovechá el{" "}
+                            <span className="font-bold text-red-600">12% OFF</span> online.
+                          </p>
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {filtrados.length === 0 && (
+                  <div className="bg-white rounded-2xl border shadow p-6 text-sm text-gray-500">
+                    No hay productos para estos filtros.
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* ================= CARRITO LATERAL ================= */}
-          <CarritoSidePanel
-            carrito={carrito}
-            secondaryLabel="Ver promociones"
-            secondaryPath="/"
-          />
+          {/* ================= CARRITO ================= */}
+          <div className="lg:col-span-1 lg:pl-6">
+            <CarritoSidePanel
+              carrito={carrito}
+              secondaryLabel="Ver promociones"
+              secondaryPath="/"
+            />
+          </div>
         </div>
       </div>
 
-      {/* MODAL PRODUCTO */}
+      {/* ================= MODAL ================= */}
       {productoSeleccionado && (
         <ProductoModal
           producto={productoSeleccionado}
+          cantidadInicial={carrito[productoSeleccionado.id] || 0}
           onClose={() => setProductoSeleccionado(null)}
-          carrito={carrito}
-          cambiarCantidad={cambiarCantidad}
-          agregarUno={agregarUno}
+          onConfirm={(cantidad) =>
+            guardarCarrito({
+              ...carrito,
+              [productoSeleccionado.id]: cantidad,
+            })
+          }
         />
       )}
     </div>
