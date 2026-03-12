@@ -14,6 +14,13 @@ interface Producto {
   imagen_url?: string;
 }
 
+interface PedidoConfirmadoResumen {
+  id: string;
+  descuento: number;
+  entregaLabel: string;
+  totalFinal: number;
+}
+
 const MINIMO_COMPRA = 25000;
 
 const CarritoB2B: React.FC = () => {
@@ -25,6 +32,10 @@ const CarritoB2B: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [pedidoID, setPedidoID] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
+
+  const [pedidoConfirmado, setPedidoConfirmado] =
+    useState<PedidoConfirmadoResumen | null>(null);
 
   // ======================
   // init carrito
@@ -197,6 +208,15 @@ const CarritoB2B: React.FC = () => {
     try {
       if (!cumpleMinimo) return;
       if (!user) return;
+      if (confirmando) return;
+
+      setConfirmando(true);
+
+      // Snapshot para que no cambie a 0% después de vaciar carrito
+      const descuentoAplicado = porcentajeDescuento;
+      const entregaLabel = entrega.label;
+      const entregaIso = entrega.iso;
+      const totalFinalPedido = totalFinal;
 
       const { data: pedido, error } = await supabase
         .from("z_pedidos")
@@ -205,15 +225,16 @@ const CarritoB2B: React.FC = () => {
           cliente_username: (user as any).username,
           created_by: "b2b-web",
           estado: "pendiente",
-          total: totalFinal,
-          fecha_entrega: entrega.iso,
-          porcentaje_descuento: porcentajeDescuento,
+          total: totalFinalPedido,
+          fecha_entrega: entregaIso,
+          porcentaje_descuento: descuentoAplicado,
         })
         .select()
         .single();
 
       if (error || !pedido) {
         console.error("ERROR CREANDO PEDIDO:", error);
+        setConfirmando(false);
         return;
       }
 
@@ -223,29 +244,41 @@ const CarritoB2B: React.FC = () => {
         const qty = carrito[p.id] || 0;
         if (qty <= 0) continue;
 
-        const precioUnitarioFinal = p.precio * (1 - porcentajeDescuento / 100);
+        const precioUnitarioFinal = p.precio * (1 - descuentoAplicado / 100);
 
-        const { error: itemError } = await supabase.from("z_pedido_items").insert({
-          pedido_id: pedido.id,
-          producto_id: p.id,
-          articulo: p.articulo,
-          nombre: p.nombre,
-          precio: Number(precioUnitarioFinal.toFixed(2)),
-          cantidad: qty,
-          subtotal: Number((precioUnitarioFinal * qty).toFixed(2)),
-        });
+        const { error: itemError } = await supabase
+          .from("z_pedido_items")
+          .insert({
+            pedido_id: pedido.id,
+            producto_id: p.id,
+            articulo: p.articulo,
+            nombre: p.nombre,
+            precio: Number(precioUnitarioFinal.toFixed(2)),
+            cantidad: qty,
+            subtotal: Number((precioUnitarioFinal * qty).toFixed(2)),
+            fecha_entrega: entregaIso,
+          });
 
         if (itemError) {
           console.error("Error insertando item:", itemError);
         }
       }
 
+      setPedidoConfirmado({
+        id: pedido.id,
+        descuento: descuentoAplicado,
+        entregaLabel,
+        totalFinal: totalFinalPedido,
+      });
+
       localStorage.removeItem("carrito_b2b");
       setCarrito({});
       setShowConfirmModal(false);
       setShowSuccessModal(true);
+      setConfirmando(false);
     } catch (e) {
       console.error(e);
+      setConfirmando(false);
     }
   };
 
@@ -274,7 +307,8 @@ const CarritoB2B: React.FC = () => {
                   const qty = carrito[p.id] || 0;
                   if (!qty) return null;
 
-                  const precioFinalUnitario = p.precio * (1 - porcentajeDescuento / 100);
+                  const precioFinalUnitario =
+                    p.precio * (1 - porcentajeDescuento / 100);
                   const ahorroUnitario = p.precio - precioFinalUnitario;
 
                   return (
@@ -424,7 +458,8 @@ const CarritoB2B: React.FC = () => {
               </div>
 
               <div className="text-xs text-gray-500">
-                Entrega estimada: <b className="text-gray-700">{entrega.label}</b>
+                Entrega estimada:{" "}
+                <b className="text-gray-700">{entrega.label}</b>
               </div>
 
               <div className="text-xs rounded-xl p-3 border bg-gray-50 text-gray-700">
@@ -463,7 +498,8 @@ const CarritoB2B: React.FC = () => {
                   {(MINIMO_COMPRA - totalSinDescuento).toLocaleString("es-AR", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  })}.
+                  })}
+                  .
                 </div>
               )}
 
@@ -515,15 +551,17 @@ const CarritoB2B: React.FC = () => {
             <div className="flex gap-2 mt-5">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition"
+                disabled={confirmando}
+                className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition disabled:opacity-60"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmarPedidoFinal}
-                className="flex-1 vafood-gradient hover:opacity-[0.96] text-white rounded-xl py-2.5 text-sm font-extrabold shadow-sm transition"
+                disabled={confirmando}
+                className="flex-1 vafood-gradient hover:opacity-[0.96] text-white rounded-xl py-2.5 text-sm font-extrabold shadow-sm transition disabled:opacity-60"
               >
-                Confirmar
+                {confirmando ? "Confirmando..." : "Confirmar"}
               </button>
             </div>
           </div>
@@ -531,16 +569,25 @@ const CarritoB2B: React.FC = () => {
       )}
 
       {/* MODAL ÉXITO */}
-      {showSuccessModal && (
+      {showSuccessModal && pedidoConfirmado && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-[92%] max-w-md animate-fadeIn">
             <h3 className="text-lg font-extrabold text-gray-900">¡Listo!</h3>
             <p className="text-sm text-gray-600 mt-2">
               Tu pedido fue generado correctamente.
               <br />
-              Entrega estimada: <b>{entrega.label}</b>
+              Entrega estimada: <b>{pedidoConfirmado.entregaLabel}</b>
               <br />
-              Descuento aplicado: <b>{porcentajeDescuento}%</b>
+              Descuento aplicado: <b>{pedidoConfirmado.descuento}%</b>
+              <br />
+              Total final:{" "}
+              <b>
+                $
+                {pedidoConfirmado.totalFinal.toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </b>
               {pedidoID ? (
                 <>
                   <br />
