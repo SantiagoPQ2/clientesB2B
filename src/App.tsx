@@ -23,12 +23,18 @@ import PedidosB2B from "./pages/b2b/Pedidos";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Info from "./pages/Info";
+import ForceProfileSetup from "./pages/ForceProfileSetup";
 
 function ProtectedApp() {
   const { user } = useAuth();
   const hasUpdate = useVersionChecker(60000);
 
   if (!user) return <Login />;
+
+  // Si no completó mail / phone o no cambió password, lo bloquea acá
+  if (user.mustCompleteProfile) {
+    return <ForceProfileSetup />;
+  }
 
   const role = user.role;
 
@@ -56,19 +62,14 @@ function ProtectedApp() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
-
-      {/* NAVIGATION */}
       <Navigation />
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 overflow-hidden">
         {allowedRoutes}
       </main>
 
-      {/* FOOTER */}
       <Footer />
 
-      {/* UPDATE BANNER */}
       {hasUpdate && (
         <UpdateBanner onReload={() => window.location.reload()} />
       )}
