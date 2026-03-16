@@ -3,21 +3,25 @@ import { supabase } from "../config/supabase";
 import { useAuth } from "../context/AuthContext";
 
 export default function Settings() {
-  const { user, logout } = useAuth();
-  const [profile, setProfile] = useState({ name: "", age: "", phone: "", mail: "" });
+  const { user, logout, refreshUser } = useAuth();
+
+  const [profile, setProfile] = useState({
+    name: "",
+    age: "",
+    phone: "",
+    mail: "",
+  });
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
-  /* ======================================
-        Cargar perfil desde clientes_app
-  ====================================== */
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("clientes_app")  // ⭐ CAMBIO DE TABLA
+        .from("clientes_app")
         .select("name, age, phone, mail")
         .eq("id", user.id)
         .single();
@@ -40,14 +44,11 @@ export default function Settings() {
     loadProfile();
   }, [user]);
 
-  /* ======================================
-        Guardar perfil
-  ====================================== */
   const saveProfile = async () => {
     if (!user) return;
 
     const { error } = await supabase
-      .from("clientes_app")  // ⭐ CAMBIO
+      .from("clientes_app")
       .update({
         name: profile.name,
         age: profile.age ? parseInt(profile.age) : null,
@@ -56,13 +57,15 @@ export default function Settings() {
       })
       .eq("id", user.id);
 
-    if (error) alert("❌ Error al guardar perfil: " + error.message);
-    else alert("✅ Perfil actualizado correctamente");
+    if (error) {
+      alert("❌ Error al guardar perfil: " + error.message);
+      return;
+    }
+
+    await refreshUser();
+    alert("✅ Perfil actualizado correctamente");
   };
 
-  /* ======================================
-        Cambiar contraseña
-  ====================================== */
   const changePassword = async () => {
     if (!user) return;
 
@@ -70,36 +73,36 @@ export default function Settings() {
       alert("⚠️ Completa ambos campos de contraseña");
       return;
     }
+
     if (newPassword !== confirmPassword) {
       alert("⚠️ Las contraseñas no coinciden");
       return;
     }
 
     const { error } = await supabase
-      .from("clientes_app")  // ⭐ CAMBIO
-      .update({ password: newPassword })
+      .from("clientes_app")
+      .update({
+        password: newPassword,
+        password_changed: true,
+      })
       .eq("id", user.id);
 
     if (error) {
       alert("❌ Error al cambiar contraseña: " + error.message);
-    } else {
-      alert("✅ Contraseña actualizada correctamente");
-      setNewPassword("");
-      setConfirmPassword("");
+      return;
     }
+
+    await refreshUser();
+    alert("✅ Contraseña actualizada correctamente");
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
-  /* ======================================
-        Logout
-  ====================================== */
   const handleLogout = () => {
     logout();
     window.location.href = "/";
   };
 
-  /* ======================================
-        Dark Mode
-  ====================================== */
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -183,7 +186,6 @@ export default function Settings() {
         Cambiar contraseña
       </button>
 
-      {/* 🌙 Modo oscuro */}
       <div className="flex items-center justify-between mt-4 p-3 border rounded dark:border-gray-600">
         <span className="font-medium">🌙 Modo oscuro</span>
         <button
