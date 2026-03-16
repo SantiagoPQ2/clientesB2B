@@ -115,7 +115,7 @@ const PromosB2B: React.FC = () => {
               {/* fondo decorativo */}
               <div className="absolute inset-0">
                 <div className="absolute -top-16 -left-16 h-52 w-52 rounded-full bg-red-100/60 blur-2xl" />
-                <div className="absolute top-10 right-10 h-44 w-44 rounded-full bg-amber-100/70 blur-2xl" />
+                <div className="absolute top-10 right-10 h-44 w-44 rounded-full bg-amber-100/60 blur-2xl" />
                 <div className="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-rose-100/60 blur-2xl" />
               </div>
 
@@ -129,43 +129,43 @@ const PromosB2B: React.FC = () => {
 
                     <h3 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black leading-tight text-gray-900">
                       Comprá más y
-                      <span className="block text-red-600">ahorrá en grande</span>
+                      <span className="block text-red-600">ahorrá un 12%</span>
                     </h3>
 
                     <p className="mt-4 max-w-2xl text-sm sm:text-base text-gray-600 leading-relaxed">
-                      Hacé tu pedido online y activá beneficios automáticos para
-                      toda la compra. Más volumen, más ahorro.
+                      Hacé tu pedido online y obtené un descuento automático en
+                      toda tu compra superando el mínimo promocional.
                     </p>
 
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-5 shadow-sm">
+                    <div className="mt-6">
+                      <div className="rounded-[24px] border border-red-100 bg-gradient-to-br from-red-50 via-white to-rose-50 p-6 shadow-sm max-w-[680px]">
                         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-500">
-                          Beneficio 1
+                          Beneficio exclusivo
                         </div>
-                        <div className="mt-2 text-4xl font-black text-red-600">
-                          12% OFF
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-gray-800">
-                          Desde $25.000 en toda tu compra
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Se aplica al total de tu pedido online.
-                        </p>
-                      </div>
 
-                      <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
-                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-500">
-                          Beneficio 2
+                        <div className="mt-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                          <div>
+                            <div className="text-4xl sm:text-5xl font-black text-red-600 leading-none">
+                              12% OFF
+                            </div>
+                            <p className="mt-3 text-base sm:text-lg font-bold text-gray-900">
+                              En toda tu compra desde $25.000
+                            </p>
+                            <p className="mt-2 text-sm text-gray-500">
+                              El descuento se aplica automáticamente al total del
+                              pedido online.
+                            </p>
+                          </div>
+
+                          <div className="rounded-2xl border border-red-200 bg-white px-5 py-4 min-w-[180px]">
+                            <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
+                              Mínimo promocional
+                            </div>
+                            <div className="mt-1 text-3xl font-black text-gray-900">
+                              $25.000
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-2 text-4xl font-black text-amber-600">
-                          13,5% OFF
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-gray-800">
-                          En toda tu compra llevando 3 vinos
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Sumás más descuento sobre el total del pedido.
-                        </p>
                       </div>
                     </div>
 
@@ -189,7 +189,8 @@ const PromosB2B: React.FC = () => {
                     </div>
 
                     <div className="mt-4 text-xs text-gray-500">
-                      Promociones válidas para compras online sujetas a catálogo y stock disponible.
+                      Promoción válida para compras online sujetas a catálogo y
+                      stock disponible.
                     </div>
                   </div>
 
@@ -203,7 +204,7 @@ const PromosB2B: React.FC = () => {
                       <div className="mt-4 space-y-4">
                         <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4 border border-white/10">
                           <div className="text-sm text-white/80">
-                            Pedido mínimo promo
+                            Compra mínima
                           </div>
                           <div className="mt-1 text-3xl font-black">
                             $25.000
@@ -212,22 +213,22 @@ const PromosB2B: React.FC = () => {
 
                         <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4 border border-white/10">
                           <div className="text-sm text-white/80">
-                            Sumando vinos
+                            Beneficio activo
                           </div>
                           <div className="mt-1 text-3xl font-black">
-                            3 botellas
+                            12% OFF
                           </div>
                         </div>
 
                         <div className="rounded-2xl bg-red-500/20 border border-red-300/20 p-4">
                           <div className="text-sm font-semibold text-red-100">
-                            Descuento máximo
+                            Aplicación
                           </div>
-                          <div className="mt-1 text-4xl font-black text-white">
-                            13,5%
+                          <div className="mt-1 text-2xl font-black text-white leading-tight">
+                            En todo el pedido
                           </div>
-                          <div className="text-sm text-red-100/90">
-                            en toda tu compra
+                          <div className="mt-1 text-sm text-red-100/90">
+                            automático al superar el mínimo
                           </div>
                         </div>
                       </div>
@@ -242,11 +243,11 @@ const PromosB2B: React.FC = () => {
               {promos.length === 0 ? (
                 <div className="bg-white rounded-2xl vafood-shadow border border-gray-100 p-8 text-center animate-fadeIn">
                   <p className="text-gray-700 font-semibold text-lg">
-                    Hoy no hay combos cargados, pero tus beneficios online siguen activos.
+                    Hoy no hay combos cargados, pero tu beneficio online sigue activo.
                   </p>
                   <p className="mt-2 text-sm text-gray-500 max-w-2xl mx-auto">
                     Entrá al catálogo y armá tu pedido para aprovechar el 12% OFF
-                    desde $25.000, o el 13,5% OFF llevando además 3 vinos.
+                    en toda tu compra desde $25.000.
                   </p>
 
                   <button
@@ -367,7 +368,7 @@ const PromosB2B: React.FC = () => {
                             </div>
 
                             <p className="mt-3 text-[11px] text-gray-500">
-                              Aprovechá tus descuentos online vigentes.
+                              Aprovechá tu descuento online vigente.
                             </p>
                           </div>
                         </div>
@@ -396,12 +397,17 @@ const PromosB2B: React.FC = () => {
           producto={productoSeleccionado}
           cantidadInicial={carrito[productoSeleccionado.id] || 0}
           onClose={() => setProductoSeleccionado(null)}
-          onConfirm={(cantidad) =>
-            guardarCarrito({
-              ...carrito,
-              [productoSeleccionado.id]: cantidad,
-            })
-          }
+          onConfirm={(cantidad) => {
+            const nuevoCarrito = { ...carrito };
+
+            if (cantidad <= 0) {
+              delete nuevoCarrito[productoSeleccionado.id];
+            } else {
+              nuevoCarrito[productoSeleccionado.id] = cantidad;
+            }
+
+            guardarCarrito(nuevoCarrito);
+          }}
         />
       )}
     </div>
