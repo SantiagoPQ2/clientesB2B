@@ -7,41 +7,100 @@ type User = {
   role: "admin" | "cliente";
   name?: string;
   catalogo?: string | null;
+  mail?: string | null;
+  phone?: string | null;
+  password_changed?: boolean;
+  mustCompleteProfile?: boolean;
 } | null;
 
 type AuthContextType = {
   user: User;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function hasValidMail(mail?: string | null) {
+  return !!mail && mail.trim() !== "";
+}
+
+function hasValidPhone(phone?: string | null) {
+  if (!phone) return false;
+  const value = phone.trim();
+  return value !== "" && value !== "0";
+}
+
+function buildUser(data: any) {
+  const mustCompleteProfile =
+    !data.password_changed ||
+    !hasValidMail(data.mail) ||
+    !hasValidPhone(data.phone);
+
+  return {
+    id: data.id,
+    username: data.username,
+    role: data.role,
+    name: data.name ?? "",
+    catalogo: data.catalogo ?? null,
+    mail: data.mail ?? "",
+    phone: data.phone ?? "",
+    password_changed: !!data.password_changed,
+    mustCompleteProfile,
+  };
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
+    if (!stored) return;
+
+    try {
+      setUser(JSON.parse(stored));
+    } catch {
+      localStorage.removeItem("user");
+    }
   }, []);
+
+  const refreshUser = async () => {
+    const stored = localStorage.getItem("user");
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (!parsed?.id) return;
+
+      const { data, error } = await supabase
+        .from("clientes_app")
+        .select("id, username, role, name, catalogo, mail, phone, password_changed")
+        .eq("id", parsed.id)
+        .single();
+
+      if (error || !data) return;
+
+      const u = buildUser(data);
+      setUser(u);
+      localStorage.setItem("user", JSON.stringify(u));
+    } catch {
+      localStorage.removeItem("user");
+      setUser(null);
+    }
+  };
 
   const login = async (username: string, password: string) => {
     const { data, error } = await supabase
-      .from("clientes_app") // ⭐ USA LA TABLA CORRECTA
-      .select("*")
+      .from("clientes_app")
+      .select("id, username, role, name, catalogo, mail, phone, password_changed")
       .eq("username", username)
       .eq("password", password)
       .single();
 
     if (error || !data) return false;
 
-    const u = {
-      id: data.id, // UUID
-      username: data.username, // EL CÓDIGO DEL CLIENTE (ej: 8885)
-      role: data.role,
-      name: data.name ?? "",
-      catalogo: data.catalogo ?? null,
-    };
+    const u = buildUser(data);
 
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
@@ -56,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
