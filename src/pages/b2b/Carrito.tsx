@@ -473,20 +473,11 @@ const CarritoB2B: React.FC = () => {
                   <>
                     Promo aplicada: <b>12% OFF</b> por superar $
                     {MINIMO_COMPRA.toLocaleString("es-AR")}.
-                    {cantidadVinosDivision < 3 && (
-                      <>
-                        {" "}
-                        Sumando{" "}
-                        <b>{3 - cantidadVinosDivision} vino(s) división más</b>,
-                        pasás a <b>13,5% OFF</b>.
-                      </>
-                    )}
                   </>
                 ) : (
                   <>
                     Superando ${MINIMO_COMPRA.toLocaleString("es-AR")} obtenés{" "}
-                    <b>12% OFF</b>. Y con <b>3 vinos división o más</b>, obtenés{" "}
-                    <b>13,5% OFF</b> en toda la compra.
+                    <b>12% OFF</b>.
                   </>
                 )}
               </div>
